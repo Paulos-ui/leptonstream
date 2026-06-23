@@ -5,15 +5,15 @@ import type { GatewayClient } from "@circle-fin/x402-batching/client";
 import type { Hex } from "viem";
 import { ARC } from "./arc";
 
-// TESTNET BURNER ONLY. Gateway's buyer SDK needs an EOA private key (it uses
-// ecrecover and does not support smart-contract wallets), so the lowest-friction
-// path is a throwaway EOA generated in the browser. Never reuse for real funds.
-// Production migration: Circle Developer-Controlled (MPC) wallets behind this
-// same module, signing via Circle's Sign Typed Data API.
-//
-// The SDK is loaded dynamically (not statically imported) so it never lands in
-// the synchronous browser bundle — it's pulled in only when a real session runs.
-const KEY = "lepton.burner.pk";
+// CAPPED SESSION SIGNER (testnet). Gateway's buyer flow signs an authorization
+// every few seconds; a human can't approve a wallet popup that often, so the
+// stream is driven by a session key that signs autonomously up to the user's
+// ceiling. The user's REAL connected wallet is their identity and funds this
+// session — so it's a delegated spending session, not a throwaway identity.
+// Production: swap for Circle Developer-Controlled (MPC) wallets behind this
+// same module. The SDK is dynamically imported so it never enters the
+// synchronous browser bundle.
+const KEY = "lepton.session.pk";
 
 export function loadOrCreateKey(): Hex {
   if (typeof window === "undefined") return generatePrivateKey();
