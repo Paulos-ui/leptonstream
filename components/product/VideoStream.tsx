@@ -11,11 +11,13 @@ export default function VideoStream({
   playing,
   quality,
   color,
+  onQuality,
 }: {
   src?: string;
   playing: boolean;
   quality: number;
   color: string;
+  onQuality?: (q: number) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [muted, setMuted] = useState(true);
@@ -72,6 +74,28 @@ export default function VideoStream({
       video.pause();
     }
   }, [playing]);
+
+  // Real quality signal: buffering / stalls / tab-hidden lower it; smooth
+  // playback restores it. The agent throttles on THIS, not a fake value.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !onQuality) return;
+    const good = () => onQuality(document.hidden ? 0.3 : 1);
+    const bad = () => onQuality(0.3);
+    const vis = () => onQuality(document.hidden ? 0.3 : video.paused ? 1 : 1);
+    video.addEventListener("playing", good);
+    video.addEventListener("canplay", good);
+    video.addEventListener("waiting", bad);
+    video.addEventListener("stalled", bad);
+    document.addEventListener("visibilitychange", vis);
+    return () => {
+      video.removeEventListener("playing", good);
+      video.removeEventListener("canplay", good);
+      video.removeEventListener("waiting", bad);
+      video.removeEventListener("stalled", bad);
+      document.removeEventListener("visibilitychange", vis);
+    };
+  }, [onQuality]);
 
   return (
     <div className="relative aspect-video overflow-hidden rounded-2xl border border-cream/10 bg-ink">

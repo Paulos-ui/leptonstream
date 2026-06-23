@@ -40,6 +40,25 @@ export function hasWallet(): boolean {
   return typeof window !== "undefined" && !!(window as { ethereum?: unknown }).ethereum;
 }
 
+/**
+ * Turn a thrown wallet/viem error into a short, safe line.
+ * User rejections return "" (a person saying "no" is not an error).
+ */
+export function walletError(e: unknown): string {
+  const err = e as { code?: number; name?: string; shortMessage?: string; message?: string };
+  const code = err?.code;
+  const msg = err?.shortMessage || err?.message || String(e);
+  if (
+    code === 4001 ||
+    err?.name === "UserRejectedRequestError" ||
+    /user rejected|user denied|denied request/i.test(msg)
+  ) {
+    return "";
+  }
+  // First line only, hard-capped — never dump a viem stack into the UI.
+  return msg.split("\n")[0].slice(0, 140);
+}
+
 const publicClient = () =>
   createPublicClient({ chain: arcChain, transport: http(ARC.rpcUrl) });
 

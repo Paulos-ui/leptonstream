@@ -15,6 +15,7 @@ export interface SessionOpts {
   ceilingUsd: number;
   demo: boolean;
   privateKey: Hex | null;
+  quality: number; // current effective quality (real signal, possibly overridden)
 }
 
 export interface Settled {
@@ -31,13 +32,11 @@ export function useStreamSession(opts: SessionOpts) {
   const [log, setLog] = useState<{ t: number; line: string }[]>([]);
   const [settled, setSettled] = useState<Settled[]>([]);
   const [playing, setPlaying] = useState(false);
-  const [quality, setQuality] = useState(1);
 
   const optsRef = useRef(opts);
   optsRef.current = opts;
   const agentRef = useRef<PaymentAgent | null>(null);
   const offRef = useRef<(() => void) | null>(null);
-  const dropUntil = useRef(0);
 
   const build = useCallback(async () => {
     const o = optsRef.current;
@@ -62,19 +61,13 @@ export function useStreamSession(opts: SessionOpts) {
       if (e.type === "state") {
         setState(e.state);
         setReason(e.reason);
-        setLog((l) => [
-          ...l.slice(-6),
-          { t: Math.round(agent.secondsMetered), line: e.reason },
-        ]);
+        setLog((l) => [...l.slice(-6), { t: Math.round(agent.secondsMetered), line: e.reason }]);
       } else if (e.type === "tick") {
         setSpent(e.spentUnits);
         setSeconds(Math.round(e.seconds));
       } else if (e.type === "batch" && e.result.ok) {
         setSpent(agent.spentUnits);
-        setSettled((s) => [
-          ...s,
-          { seq: e.batch.seq, units: e.result.settledUnits, tx: e.result.txHash },
-        ]);
+        setSettled((s) => [...s, { seq: e.batch.seq, units: e.result.settledUnits, tx: e.result.txHash }]);
       } else if (e.type === "ceiling") {
         setSpent(e.spentUnits);
       }
@@ -86,9 +79,7 @@ export function useStreamSession(opts: SessionOpts) {
   useEffect(() => {
     if (!playing) return;
     const id = setInterval(() => {
-      const q = Date.now() < dropUntil.current ? 0.3 : 1;
-      setQuality(q);
-      void agentRef.current?.tick(1, q);
+      void agentRef.current?.tick(1, optsRef.current.quality);
     }, 1000);
     return () => clearInterval(id);
   }, [playing]);
@@ -113,22 +104,6 @@ export function useStreamSession(opts: SessionOpts) {
     void agentRef.current?.stop();
     setPlaying(false);
   }, []);
-  const dropQuality = useCallback(() => {
-    dropUntil.current = Date.now() + 12_000;
-  }, []);
 
-  return {
-    state,
-    spentUnits,
-    seconds,
-    reason,
-    log,
-    settled,
-    playing,
-    quality,
-    start,
-    pause,
-    stop,
-    dropQuality,
-  };
+  return { state, spentUnits, seconds, reason, log, settled, playing, start, pause, stop };
 }

@@ -1,10 +1,11 @@
 # Deploying LeptonStream to Vercel
 
-One Next.js 15 app: marketing site, viewer (`/watch/[creator]`), streamer
-studio (`/studio`), and the payment facilitator (`/api/pay/[stream]`).
+One Next.js 15 app: marketing site, viewer (`/watch/[creator]`), creator setup
+(`/studio`), the x402 facilitator (`/api/pay/[stream]`), a public balance lookup
+(`/api/balance/[addr]`), and the embeddable overlay (`/embed.js`).
 
-It is **live by default** — real gasless USDC settlement on Arc testnet via
-Circle Gateway, with self-custody wallets. There is no "demo mode" in the UI.
+Live by default — real gasless USDC settlement on Arc testnet, self-custody
+wallets, no demo mode in the UI.
 
 ## 1. Push to GitHub
 
@@ -15,68 +16,64 @@ git remote add origin https://github.com/Paulos-ui/leptonstream.git
 git push -u origin main
 ```
 
-`.npmrc` (in the repo) sets `legacy-peer-deps=true`; `package.json` pins Node 22.
+`.npmrc` sets `legacy-peer-deps=true`; `package.json` pins Node 22.
 
 ## 2. Import into Vercel
 
 1. vercel.com → Add New → Project → import `Paulos-ui/leptonstream`.
-2. Framework: Next.js (auto). Leave build/output at defaults.
+2. Framework: Next.js (auto). Defaults are fine.
 3. Settings → General → Node.js Version → **22.x**.
 4. Deploy.
 
 ## 3. Environment variables
 
-**None are required.** Users connect their own wallet, so there are no keys or
-secrets. `FACILITATOR_URL` is optional and already defaults to the testnet URL.
+**None required.** Users connect their own wallets — no keys or secrets.
+(`FACILITATOR_URL` is optional and already defaults to the testnet URL.)
 
-(There is no `NEXT_PUBLIC_DEMO`. Live is the default. A hidden, unadvertised
-stage fallback exists at `…/watch/<addr>?safe=1` that runs the agent on a mock
-settler — use it only if the live path misbehaves in front of judges.)
+## 4. Creator flow (Owncast)
 
-## 4. Using it live on Arc testnet
+1. Open `/studio`, **Connect wallet** (it adds/switches to Arc Testnet for you).
+   Your wallet address is your payee.
+2. Enter your Owncast server URL (optional but recommended — it powers the live
+   feed + viewer count).
+3. Add payments to your stream, either:
+   - **Overlay snippet** — paste the generated `<script …>` into Owncast → Admin
+     → Custom Content / Custom Javascript. A support pill appears on your page.
+   - **Support link** — share the generated `/watch/…?server=…` link in your
+     stream description or socials. No instance changes needed.
+4. Watch earnings accrue; **Initiate withdrawal** → **Finalize → wallet** after
+   the short on-chain delay.
 
-Arc uses **USDC as its native gas token**, so a single faucet drip covers both
-gas and the streaming balance.
+## 5. Viewer flow
 
-**Streamer:**
-1. Open `/studio`, click **Connect wallet** (MetaMask or any injected wallet).
-   It will offer to add/switch to **Arc Testnet** automatically.
-2. Your wallet address is your payee. Copy your **watch link** and share it.
-3. Earnings (available + withdrawable) update live. **Initiate withdrawal**, then
-   **Finalize → wallet** after the short on-chain delay.
-
-**Viewer:**
-1. Open the watch link, **Connect wallet** (this is your identity).
-2. If your wallet has no test USDC, use the **Faucet** link → pick Arc Testnet →
-   paste your address.
-3. **Fund session** (e.g. $1.00). This is one signature: it moves USDC from your
-   wallet into a capped session signer, which then deposits into Gateway and
-   streams autonomously — no popup every second. The session can never spend
-   past your ceiling.
-4. Set the ceiling and press **Start streaming**. Each ~$0.005 batch settles on
-   Arc with a link to testnet.arcscan.app.
+1. Open the support link / click the overlay → **Connect wallet** (your identity).
+2. No test USDC? Use the **faucet** link (Arc Testnet, paste your address), refresh.
+3. **Fund session** (e.g. $1.00) — one signature funds a capped session that
+   streams autonomously. The Fund button stays disabled until your wallet has
+   USDC, so you never fire a doomed transaction.
+4. Set your ceiling, **Start supporting**. Batches settle on Arc (~$0.005 each)
+   with explorer links. Buffering / tab-away makes the agent throttle for real.
 
 ## Why a "session", not a popup per second
 
 Gasless per-second payment signs an authorization every few seconds — a human
 can't approve a wallet prompt that often. So your real connected wallet (your
 identity + funding source) authorizes a capped session key that signs
-autonomously up to your ceiling. This is the standard pattern for streaming
-payments; for full production, swap the session key for a Circle
-Developer-Controlled (MPC) wallet behind the same module.
+autonomously up to your ceiling. Production swap: Circle Developer-Controlled
+(MPC) wallets behind the same module.
 
 ## Confirm on your first live run
 
-I built every Gateway call against the real SDK schema (EIP-712 signing and the
-Gateway Wallet ABI extracted from the shipped package), but I could not execute
-against live Circle/Arc/MetaMask. On your first funded run, watch the browser
+Every Gateway call is built against the real SDK schema (EIP-712 signing + the
+Gateway Wallet ABI extracted from the shipped package), but it hasn't been
+executed against live Circle/Arc/MetaMask. On your first funded run, watch the
 console for:
 
-1. **CORS** on the `/api/pay` settlement round-trip or RPC reads. The settlement
-   route is same-origin; RPC reads use the public Arc RPC. If a call is blocked,
-   it will show clearly in the console.
+1. **CORS** — Owncast status/HLS reads (cross-origin) and the `/api/pay`
+   round-trip. Owncast generally serves permissive CORS; the embed overlay runs
+   on the creator's own page (same origin) so it's unaffected.
 2. **The payment header** `client.pay()` sends. The facilitator reads
-   `x-payment` / `payment-signature` / `payment`; if a live 402 shows a different
-   name, it is a one-line change in `app/api/pay/[stream]/route.ts`.
+   `x-payment` / `payment-signature` / `payment`; adjust the one line in
+   `app/api/pay/[stream]/route.ts` if a live 402 shows a different name.
 
-If anything fails mid-demo, `?safe=1` on the watch link is your instant fallback.
+Hidden stage fallback: `…/watch/<addr>?safe=1` runs the agent on a mock settler.

@@ -18,7 +18,7 @@ export default function Hero() {
           transition={{ duration: 0.8, ease }}
           className="mb-8 font-mono text-[11px] uppercase tracking-eyebrow text-amber/80"
         >
-          Lepton Agents · per-second payments
+          Per-second support for live streams · powered by agents
         </motion.p>
 
         <h1 className="font-serif text-cream">
@@ -46,9 +46,10 @@ export default function Hero() {
           transition={{ duration: 1, ease, delay: 0.34 }}
           className="mt-10 max-w-xl text-base leading-relaxed text-cream/70 sm:text-lg"
         >
-          Stop bundling value into subscriptions. LeptonStream pays for a live
-          stream by the second — and hands the stream to an autonomous agent
-          that starts, throttles, and settles it for you, in real time.
+          Your viewers support your live stream by the second, not in
+          lump-sum tips — and an autonomous agent meters, throttles, and settles
+          every payment in real time. Drop it onto the Owncast server you
+          already run; no platform to migrate to.
         </motion.p>
 
         <motion.div

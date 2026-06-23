@@ -1,135 +1,62 @@
-# LeptonStream — landing experience
+# LeptonStream
 
-> Value, in constant motion. A scroll-driven landing page for LeptonStream:
-> per-second payments for live streams, run by an autonomous agent on Circle
-> nanopayments, Arc, and x402.
+**Get paid by the second on the live stream you already run.**
 
-Built as a single living instrument you scroll *through* — not a stack of
-sections. One persistent WebGL stream lives behind the entire page and changes
-meaning as you descend through seven acts.
+LeptonStream is a per-second support layer for [Owncast](https://owncast.online),
+the open-source self-hosted live-streaming server. Viewers stream value to a
+creator continuously while they watch — metered and settled in real time by an
+autonomous payment agent — instead of dropping the occasional lump-sum tip.
+Creators keep their existing Owncast instance; there's no platform to move to.
 
----
-
-## The seven acts
-
-| # | Act | What the stream does |
-|---|-----|----------------------|
-| 0 | **Hero** | Stream establishes; scroll velocity pumps emission. Live counter. |
-| 1 | **Continuous → Discrete** | Scroll scrubs a camera dive; the smooth ribbon resolves into countable leptons, then re-forms. |
-| 2 | **Instrument** | Flow channels into a measured beam (`uFocus`); a calibrated rail meters value per second. |
-| 3 | **The agent wakes** | Periwinkle cools the field; a hysteresis loop throttles/dims the flow on a scroll-scrubbed quality drop; decisions flash. |
-| 4 | **Under the hood** | Stream recedes behind a scrim; a pinned pipeline illuminates stage by stage (ceiling → agent → Circle Arc → x402). |
-| 5 | **About** | Scroll-reactive docs; a sticky flow-gauge settles each section to verdigris as you pass it. |
-| 6 | **Set your rate** | A draggable slider drives stream intensity (`uRate`) and a live counter — control hands to the user. |
-
-Two global instrument touches: a fixed wordmark and a right-edge flow-gauge
-tracking total scroll progress.
+It's built on Circle Gateway nanopayments and x402 on Arc, but a creator never
+has to care about that — they paste one snippet and start getting paid.
 
 ---
 
-## Stack
+## How it works
 
-- **Next.js 15** (App Router) + **TypeScript**
-- **Tailwind CSS** with the LeptonStream token system
-- **Framer Motion** — `useScroll` / `useTransform` for scroll-linked motion
-- **Lenis** — buttery virtual scroll
-- **React Three Fiber + three.js** — the persistent particle stream
-- **Zustand** — financial/sim state (kept separate from presentation state)
+1. **A creator adds LeptonStream to their Owncast page** — either a one-line
+   overlay snippet, or by sharing a support link. Their payee address is their
+   own connected wallet (self-custody; no account to create).
+2. **A viewer connects their wallet** and funds a *capped session* with one
+   signature. Because gasless per-second payment signs an authorization every
+   few seconds — far too often for a human to approve each time — the real
+   wallet delegates to a session key that signs autonomously, but can never
+   spend past the ceiling the viewer sets.
+3. **The payment agent meters per second** while the viewer watches. It reads
+   real playback health: if the stream buffers, stalls, or the viewer tabs
+   away, the agent throttles spending; when playback recovers, it resumes.
+4. **Value settles on Arc in tiny batches** (~$0.005 each) via Circle Gateway —
+   gasless for the viewer, verifiable on testnet.arcscan.app.
+5. **The creator withdraws** their Gateway balance back to their wallet.
 
----
-
-## Getting started
-
-```bash
-npm install --legacy-peer-deps   # R3F v9 / React 19 peer ranges
-npm run dev                      # http://localhost:3000
-```
-
-```bash
-npm run build
-npm run typecheck
-```
-
-> Fonts load via `next/font` (Instrument Serif, JetBrains Mono) and the `geist`
-> package (Geist Sans). `next build` fetches the Google-hosted faces, so the
-> build machine needs network access to `fonts.googleapis.com` /
-> `fonts.gstatic.com`.
-
----
-
-## Deploy (Vercel)
-
-Zero config — push to GitHub and import, or run `vercel`.
-
----
+The agent's spending logic is deterministic code with a hard ceiling — never an
+LLM — so it cannot overspend.
 
 ## Architecture
 
-```
-app/
-  layout.tsx       Fonts · Lenis · StreamBackground · Wordmark · ProgressGauge · grain
-  page.tsx         Composes the seven acts in order
-  globals.css      Tokens, Lenis styles, base type
+- `core/` — the payment agent (per-second metering, hysteresis throttle, hard
+  ceiling, batched settlement) and settlement adapters. Engine-agnostic.
+- `lib/connect.ts` — connected (injected) wallet: identity, Arc add/switch,
+  key-free balance reads, session funding, two-step withdrawal.
+- `lib/wallet.ts` — the capped session signer (autonomous per-second signing).
+- `lib/owncast.ts` — reads an Owncast instance's public status / HLS feed.
+- `app/api/pay/[stream]` — the x402 facilitator; settles signed batches via
+  Circle's `BatchFacilitatorClient`.
+- `app/api/balance/[addr]` — public, CORS-enabled "received" lookup for the embed.
+- `public/embed.js` — the drop-in Owncast overlay.
+- `app/watch/[creator]` — the viewer experience (embeds the creator's live feed).
+- `app/studio` — the creator setup + earnings dashboard.
 
-components/
-  stream/
-    StreamCanvas.tsx     R3F canvas + particle system (reads scrollSignal)
-    StreamBackground.tsx Client wrapper, dynamic import ssr:false
-    streamShader.ts      GLSL: flow · zoom · focus · agent · throttle · pulse · rate
-  acts/
-    Hero · QuantumZoom · Instrument · AgentLoop · Pipeline · About · CTA
-  ui/
-    Counter.tsx          60fps DOM-direct counter
-    RateSlider.tsx       Draggable slider (pointer + keyboard)
-    Wordmark.tsx         Fixed brand
-    ProgressGauge.tsx    Right-edge flow gauge
-  providers/
-    LenisProvider.tsx    Smooth scroll, feeds scrollSignal
+The EIP-712 signing schema and Gateway Wallet ABI are derived directly from the
+`@circle-fin/x402-batching` SDK, so authorizations and contract calls match
+Circle's own client exactly.
 
-lib/
-  scrollSignal.ts  Mutable presentation state, read by the canvas at 60fps
-  store.ts         Zustand — financial/sim truth
+## Run locally
+
+```bash
+npm install --legacy-peer-deps
+npm run dev
 ```
 
-### The one idea that holds it together
-
-`lib/scrollSignal.ts` is a plain mutable object — **not** React state. The
-canvas reads it every frame inside `useFrame`; writing React state 60×/sec would
-thrash renders. Each act writes only the stream uniforms it owns
-(`zoom`, `focus`, `agent`, `throttle`, `rate`, …) from its local scroll
-progress, and each value returns to neutral at its act's edges. Financial truth
-(Zustand) and presentation truth (`scrollSignal`) never mix.
-
----
-
-## Design system — "Warm Value, Cold Intelligence"
-
-| Token        | Hex       | Meaning                                     |
-| ------------ | --------- | ------------------------------------------- |
-| `ink`        | `#16100C` | deep warm espresso base                     |
-| `amber`      | `#F6A92B` | value in flight (head of the stream)        |
-| `coral`      | `#FF6B57` | value settling (tail of the stream)         |
-| `periwinkle` | `#8B8BFA` | agent intelligence — cool against the warm  |
-| `cream`      | `#F4ECDD` | editorial text / light surfaces             |
-| `verdigris`  | `#5E8F86` | settled / confirmed (aqueduct copper)       |
-
-**Type:** Instrument Serif (display) · Geist (body) · JetBrains Mono (data).
-
-**Motion law:** value moves with a slightly viscous, liquid ease (it's a fluid);
-the agent moves crisply, with anticipation (it thinks, then acts).
-
----
-
-## Tuning knobs
-
-- **Stream** (`components/stream/StreamCanvas.tsx`): `COUNT`, `WIDTH`/`HEIGHT`,
-  `uSize`; shader `keep`/`scale` (continuous→discrete intensity).
-- **Agent drama** (`components/acts/AgentLoop.tsx`): the `0.72` quality-dip depth
-  and the `dt * 2.2` throttle ease in `StreamCanvas` most change how dramatic the
-  throttle reads.
-- **Finale** (`components/ui/RateSlider.tsx`): `MIN_RATE` / `MAX_RATE`.
-
-## Placeholders to fill
-
-- CTA action links (`Launch` / `View on GitHub`) point to `#`.
-- The `geist` Geist Sans is the body face; swap in `globals` if you prefer.
+Deployment and the live testnet walkthrough are in **DEPLOY.md**.
