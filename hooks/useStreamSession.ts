@@ -92,7 +92,11 @@ export function useStreamSession(opts: SessionOpts) {
   }, []);
 
   const start = useCallback(async () => {
-    const agent = agentRef.current ?? (await build());
+    let agent = agentRef.current;
+    if (!agent || agent.currentState === "stopped") {
+      offRef.current?.(); // detach old listener before replacing
+      agent = await build();
+    }
     agent.start();
     setPlaying(true);
   }, [build]);

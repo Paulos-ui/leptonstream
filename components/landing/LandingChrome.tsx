@@ -20,7 +20,7 @@ export function LandingNav() {
             <span className="h-1.5 w-1.5 rounded-full bg-leaf" /> arc testnet
           </span>
           <Link href="/studio" className="rounded-lg bg-ink px-4 py-2 font-mono text-[13px] text-paper transition-transform hover:scale-[1.02]">
-            Install snippet →
+            Connect wallet →
           </Link>
         </div>
       </div>

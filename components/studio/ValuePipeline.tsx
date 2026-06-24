@@ -12,13 +12,13 @@ export default function ValuePipeline({
   onInitiate: () => void; onFinalize: () => void; error: string;
 }) {
   return (
-    <section className="mt-6 rounded-3xl border border-cream/10 bg-ink/40 p-6 sm:p-8">
-      <div className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">value pipeline</div>
+    <section className="mt-6 rounded-3xl border border-ink/10 bg-white/40 p-6 sm:p-8">
+      <div className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">value pipeline</div>
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr]">
-        <Stage label="available" value={available} accent="#F6A92B"
+        <Stage label="available" value={available} accent="#5BA013"
           action={available > 0 ? { text: busy === "initiate" ? "initiating…" : "Withdraw all →", onClick: onInitiate, disabled: !!busy } : undefined} />
         <Flow active={available > 0} />
-        <Stage label="maturing" value={maturing} accent="#8B8BFA" sub="on-chain delay" />
+        <Stage label="maturing" value={maturing} accent="#8A7E6A" sub="on-chain delay" />
         <Flow active={withdrawable > 0} />
         <Stage label="ready · to wallet" value={withdrawable} accent="#5E8F86"
           action={withdrawable > 0 ? { text: busy === "finalize" ? "finalizing…" : "Finalize →", onClick: onFinalize, disabled: !!busy } : undefined} />
@@ -46,9 +46,9 @@ function Stage({ label, value, accent, sub, action }: {
       key={`stage-${label}`}
       animate={flash ? { boxShadow: [`0 0 0px ${accent}00`, `0 0 22px ${accent}55`, `0 0 0px ${accent}00`] } : {}}
       transition={{ duration: 1 }}
-      className="rounded-2xl border border-cream/10 bg-ink/50 p-5"
+      className="rounded-2xl border border-ink/10 bg-white/50 p-5"
     >
-      <div className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">{label}</div>
+      <div className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">{label}</div>
       <motion.div
         animate={flash && !reduce ? { scale: [1, 1.04, 1] } : {}}
         transition={{ duration: 0.5 }}
@@ -57,7 +57,7 @@ function Stage({ label, value, accent, sub, action }: {
       >
         ${value.toFixed(6)}
       </motion.div>
-      {sub && <div className="mt-1 font-mono text-[10px] text-cream/30">{sub}</div>}
+      {sub && <div className="mt-1 font-mono text-[10px] text-ink/30">{sub}</div>}
       {action && (
         <motion.button
           whileTap={{ scale: 0.97 }}
@@ -77,11 +77,11 @@ function Flow({ active }: { active: boolean }) {
   const reduce = useReducedMotion();
   return (
     <div className="hidden items-center sm:flex" aria-hidden>
-      <div className="relative h-[2px] w-full min-w-[28px] overflow-hidden rounded bg-cream/10">
+      <div className="relative h-[2px] w-full min-w-[28px] overflow-hidden rounded bg-ink/10">
         {active && !reduce && (
           <motion.div
             className="absolute top-0 h-full w-10 rounded"
-            style={{ background: "linear-gradient(90deg, transparent, #F6A92B, transparent)" }}
+            style={{ background: "linear-gradient(90deg, transparent, #5BA013, transparent)" }}
             initial={{ left: "-25%" }}
             animate={{ left: "115%" }}
             transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}

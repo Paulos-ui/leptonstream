@@ -17,6 +17,21 @@ export function OPTIONS() {
 // Authoritative Gateway balance (includes RECEIVED settlements) via Circle's
 // Gateway API — the same source the SDK uses — plus on-chain wallet USDC.
 // Read server-side so the browser never hits CORS on the Gateway API / RPC.
+// The Gateway /balances endpoint returns amounts as base-unit integer strings
+// (the SDK formats them separately). Normalize to a decimal USDC string here so
+// the client can parseFloat directly. Defensive: if a value already looks
+// decimal, pass it through unchanged.
+function toDecimal(x: unknown): string {
+  if (x == null) return "0";
+  const s = String(x);
+  if (s.includes(".")) return s;
+  try {
+    return formatUnits(BigInt(s), 6);
+  } catch {
+    return "0";
+  }
+}
+
 async function gatewayBalance(addr: string) {
   const res = await fetch(`${ARC.gatewayApi}/balances`, {
     method: "POST",
@@ -30,9 +45,9 @@ async function gatewayBalance(addr: string) {
   const data = await res.json().catch(() => ({}));
   const b = data?.balances?.[0];
   return {
-    available: b?.balance ?? "0",
-    withdrawing: b?.withdrawing ?? "0",
-    withdrawable: b?.withdrawable ?? "0",
+    available: toDecimal(b?.balance),
+    withdrawing: toDecimal(b?.withdrawing),
+    withdrawable: toDecimal(b?.withdrawable),
   };
 }
 

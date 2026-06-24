@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html {
@@ -11,8 +11,8 @@ html {
 }
 
 body {
-  background-color: #16100C;
-  color: #F4ECDD;
+  background-color: #EFE9DD;
+  color: #16100C;
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -41,8 +41,8 @@ html.lenis body {
 }
 
 ::selection {
-  background: rgba(246, 169, 43, 0.25);
-  color: #F4ECDD;
+  background: rgba(91, 160, 19, 0.22);
+  color: #16100C;
 }
 
 @media (prefers-reduced-motion: reduce) {

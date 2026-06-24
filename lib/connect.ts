@@ -78,11 +78,11 @@ const publicClient = () =>
 const walletClientFor = (account: Address) =>
   createWalletClient({ account, chain: arcChain, transport: custom(getEthereum()) });
 
-/** Connect the user's real wallet and make sure it's on Arc testnet. */
+/** Request account access only. Network selection is a separate, non-blocking step. */
 export async function connectWallet(): Promise<Address> {
   const eth = getEthereum();
   const accounts = (await eth.request({ method: "eth_requestAccounts" })) as Address[];
-  await ensureArc();
+  if (!accounts?.[0]) throw new Error("No account was authorized.");
   return accounts[0];
 }
 
@@ -174,6 +174,7 @@ export async function fundSession(
   sessionAddr: Address,
   amountUsd: string
 ): Promise<Hex> {
+  await ensureArc();
   return walletClientFor(from).writeContract({
     address: ARC.usdc as Address,
     abi: ERC20_ABI,
@@ -184,6 +185,7 @@ export async function fundSession(
 
 /** Streamer: begin withdrawing earnings (becomes withdrawable after the delay). */
 export async function initiateWithdraw(from: Address, amountUsd: string): Promise<Hex> {
+  await ensureArc();
   return walletClientFor(from).writeContract({
     address: ARC.gatewayWallet as Address,
     abi: GATEWAY_WALLET_ABI,
@@ -194,6 +196,7 @@ export async function initiateWithdraw(from: Address, amountUsd: string): Promis
 
 /** Streamer: finalize a matured withdrawal back to the wallet. */
 export async function finalizeWithdraw(from: Address): Promise<Hex> {
+  await ensureArc();
   return walletClientFor(from).writeContract({
     address: ARC.gatewayWallet as Address,
     abi: GATEWAY_WALLET_ABI,

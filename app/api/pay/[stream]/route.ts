@@ -83,6 +83,6 @@ export async function GET(
       units,
     });
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 402 });
+    return NextResponse.json({ error: (e as Error).message.split("\n")[0] }, { status: 402 });
   }
 }

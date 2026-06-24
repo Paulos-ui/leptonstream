@@ -78,7 +78,7 @@ export default function DashboardPage() {
         <motion.span
           animate={{ opacity: [0.3, 1, 0.3] }}
           transition={{ duration: 1.6, repeat: Infinity }}
-          className="font-mono text-[11px] uppercase tracking-eyebrow text-cream/40"
+          className="font-mono text-[11px] uppercase tracking-eyebrow text-muted"
         >
           restoring session…
         </motion.span>
@@ -92,12 +92,12 @@ export default function DashboardPage() {
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
         className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6"
       >
-        <span className="font-mono text-[11px] uppercase tracking-eyebrow text-amber/80">creator dashboard</span>
-        <h1 className="mt-3 font-serif text-5xl leading-tight text-cream">Get paid by the second on the stream you already run.</h1>
-        <p className="mt-4 max-w-lg text-cream/55">Connect the wallet you want earnings to settle to. It becomes your payee address — self-custody, no account, no middleman.</p>
+        <span className="font-mono text-[11px] uppercase tracking-eyebrow text-leaf">creator dashboard</span>
+        <h1 className="mt-3 font-serif text-5xl leading-tight text-ink">Get paid by the second on the stream you already run.</h1>
+        <p className="mt-4 max-w-lg text-ink/60">Connect the wallet you want earnings to settle to. It becomes your payee address — self-custody, no account, no middleman.</p>
         <motion.button
           whileTap={{ scale: 0.97 }} onClick={() => void connect()} disabled={connecting}
-          className="mt-8 w-fit rounded-full bg-amber px-7 py-3 font-mono text-sm text-ink disabled:opacity-50"
+          className="mt-8 w-fit rounded-full bg-leaf px-7 py-3 font-mono text-sm text-ink disabled:opacity-50"
         >
           {connecting ? "connecting…" : "Connect wallet"}
         </motion.button>

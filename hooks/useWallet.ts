@@ -114,11 +114,17 @@ export function useWallet() {
     setError("");
     setConnecting(true);
     try {
-      const addr = await connectWallet();
+      const addr = await connectWallet(); // accounts only — never blocked by network
       setAccount(addr);
-      setChainOk(true);
       setError("");
       try { localStorage.setItem(WKEY, addr); } catch { /* ignore */ }
+      // Try to get onto Arc, but the connection stands either way.
+      try {
+        await ensureArc();
+        setChainOk(true);
+      } catch {
+        setChainOk(await isOnArc()); // declined → the "Switch to Arc" button shows
+      }
     } catch (e) {
       setError(walletError(e));
     } finally {

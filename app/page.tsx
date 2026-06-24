@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import LiveCard from "@/components/landing/LiveCard";
 import { LandingNav, SectionMark } from "@/components/landing/LandingChrome";
 
@@ -29,17 +29,6 @@ const STEPS = [
   { n: "02", tag: "session key", title: "Viewer funds a capped session.", body: "One signature. The real wallet delegates to a session key — autonomous, but unable to spend a cent past the ceiling the viewer chose." },
   { n: "03", tag: "agent", title: "The agent meters per second.", body: "It reads real playback health. Buffer, stall, or tab away — spending throttles. When playback recovers, it resumes. Deterministic code. Never an LLM." },
   { n: "04", tag: "settlement", title: "Tiny batches settle on Arc.", body: "≈ $0.005 per batch via Circle Gateway. Gasless for the viewer. Verifiable on testnet.arcscan.app. Creator withdraws their Gateway balance to their wallet." },
-];
-
-const FILES = [
-  ["core/", "Payment agent: per-second metering, hysteresis throttle, hard ceiling, batched settlement. Engine-agnostic."],
-  ["lib/connect.ts", "Connected (injected) wallet — identity, Arc add/switch, key-free balance reads, session funding, two-step withdrawal."],
-  ["lib/wallet.ts", "The capped session signer. Signs autonomously, every few seconds, but never above ceiling."],
-  ["lib/owncast.ts", "Reads the public status & HLS feed of any Owncast instance."],
-  ["app/api/pay/[stream]", "x402 facilitator. Settles signed batches via Circle's BatchFacilitatorClient."],
-  ["app/api/balance/[addr]", "Public CORS-enabled 'received' lookup for the overlay embed."],
-  ["public/embed.js", "The drop-in Owncast overlay snippet."],
-  ["app/studio", "Creator setup & earnings dashboard."],
 ];
 
 const FAQS = [
@@ -69,7 +58,7 @@ export default function Home() {
               Viewers stream value to you continuously while they watch — metered and settled in real time by an autonomous payment agent. Instead of the occasional lump-sum tip, it&apos;s a tiny, honest trickle. You keep your Owncast instance. There&apos;s no platform to move to.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
-              <Link href="/studio" className="rounded-lg bg-ink px-6 py-3 font-mono text-sm text-paper transition-transform hover:scale-[1.02]">Paste the snippet →</Link>
+              <Link href="/studio" className="rounded-lg bg-ink px-6 py-3 font-mono text-sm text-paper transition-transform hover:scale-[1.02]">Connect wallet →</Link>
               <a href="#how" className="rounded-lg border border-ink/25 px-6 py-3 font-mono text-sm text-ink/80 hover:border-ink/60">See how a second pays</a>
             </div>
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
@@ -140,45 +129,35 @@ export default function Home() {
         </div>
       </section>
 
-      {/* BUILT LIKE A LEDGER */}
+      {/* WHERE THE MONEY GOES */}
       <section id="architecture" className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
         <Reveal>
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">architecture, no hand-waving</span>
-          <h2 className="mt-4 font-serif text-6xl leading-[1.0] sm:text-7xl">Built like a ledger. Read like one.</h2>
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">no middleman</span>
+          <h2 className="mt-4 font-serif text-6xl leading-[1.0] sm:text-7xl">Where the money goes.</h2>
           <div className="mt-3"><SectionMark n="03" label="" /></div>
         </Reveal>
-        <div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-[1.3fr_0.7fr]">
-          <Reveal>
-            <div className="overflow-hidden rounded-2xl border border-ink bg-ink font-mono text-[12px] text-cream/90">
-              <div className="flex items-center gap-2 border-b border-cream/10 px-5 py-3 text-cream/60">
-                <span className="h-2 w-2 rounded-full bg-leaf" /> leptonstream/
+
+        <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[
+            ["Viewers stream value", "While someone watches, value flows to you by the second — tiny amounts, continuously, with a ceiling they set."],
+            ["It lands in your balance", "Payments settle directly to your own wallet address through Circle Gateway. No platform account, no cut, nobody crediting you from outside."],
+            ["You withdraw, anytime", "Move your balance back to your wallet whenever you like. Every payment is verifiable on Arc. Self-custody from end to end."],
+          ].map(([h, b], i) => (
+            <Reveal key={i} delay={i * 0.08}>
+              <div className="h-full rounded-2xl border border-ink/15 bg-white/30 p-7">
+                <div className="font-mono text-[12px] text-leaf">0{i + 1}</div>
+                <h3 className="mt-6 font-serif text-2xl leading-tight">{h}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted">{b}</p>
               </div>
-              <div>
-                {FILES.map(([path, desc]) => (
-                  <div key={path} className="grid grid-cols-1 gap-1 border-b border-cream/5 px-5 py-3 sm:grid-cols-[200px_1fr] sm:gap-4">
-                    <span className="text-leaf">{path}</span>
-                    <span className="text-cream/55">{desc}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-          <div className="space-y-8">
-            {[
-              ["EIP-712 schema, straight from the source", "The signing schema and Gateway Wallet ABI are derived directly from @circle-fin/x402-batching. Authorizations and contract calls match Circle's own client exactly."],
-              ["Settles in batches of ~$0.005", "Tiny enough that a viewer barely registers them; large enough that the agent isn't writing to the chain every tick."],
-              ["Verifiable, publicly", "Every batch lands on Arc and is inspectable at testnet.arcscan.app. The /api/balance/[addr] endpoint returns received totals over CORS."],
-            ].map(([h, b], i) => (
-              <Reveal key={i} delay={i * 0.08}>
-                <div>
-                  <div className="mb-3 h-px w-10 bg-leaf" />
-                  <h3 className="font-serif text-2xl">{h}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{b}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+            </Reveal>
+          ))}
         </div>
+
+        <Reveal delay={0.2}>
+          <p className="mx-auto mt-10 max-w-2xl text-center font-serif text-2xl italic leading-snug text-ink/70">
+            Your stream, your server, your audience — and your money, settling in real time to a wallet only you control.
+          </p>
+        </Reveal>
       </section>
 
       {/* THE AGENT IS CODE (dark) */}
@@ -195,18 +174,28 @@ export default function Home() {
               </div>
             </Reveal>
             <Reveal delay={0.1}>
-              <div className="overflow-hidden rounded-2xl border border-cream/15 font-mono text-[12px]">
-                <div className="flex items-center justify-between border-b border-cream/10 px-5 py-3 text-cream/50 uppercase tracking-[0.12em] text-[10px]">
-                  <span>install · paste into your owncast custom html</span><span>1 line</span>
+              <div className="rounded-2xl border border-cream/15 p-7">
+                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-cream/45">start in two steps</div>
+                <div className="mt-5 space-y-5">
+                  <div className="flex gap-4">
+                    <span className="font-serif text-3xl text-leaf">1</span>
+                    <div>
+                      <div className="font-serif text-xl text-cream">Connect your wallet</div>
+                      <p className="mt-1 text-sm leading-relaxed text-cream/55">It becomes your payee address — self-custody, no account to create.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <span className="font-serif text-3xl text-leaf">2</span>
+                    <div>
+                      <div className="font-serif text-xl text-cream">Share your link</div>
+                      <p className="mt-1 text-sm leading-relaxed text-cream/55">Add it to the Owncast stream you already run. Viewers support you by the second.</p>
+                    </div>
+                  </div>
                 </div>
-                <pre className="overflow-x-auto px-5 py-5 leading-relaxed text-cream/80">
-<span className="text-cream/40">&lt;!— LeptonStream overlay —&gt;</span>{"\n"}
-&lt;script src=<span className="text-leaf">&quot;https://leptonstream.app/embed.js&quot;</span>{"\n"}{"        "}data-payee=<span className="text-leaf">&quot;0xYourWallet…&quot;</span>{"\n"}{"        "}data-rate=<span className="text-leaf">&quot;0.0042&quot;</span> async&gt;&lt;/script&gt;
-                </pre>
-                <div className="flex items-center justify-between border-t border-cream/10 px-5 py-3 text-cream/50">
-                  <span>self-custody · your wallet, your keys</span>
-                  <Link href="/studio" className="text-leaf hover:underline">Copy →</Link>
-                </div>
+                <Link href="/studio" className="mt-7 inline-block rounded-lg bg-leaf px-6 py-3 font-mono text-sm text-ink transition-transform hover:scale-[1.02]">
+                  Connect wallet →
+                </Link>
+                <p className="mt-4 font-mono text-[11px] text-cream/40">self-custody · your wallet, your keys</p>
               </div>
             </Reveal>
           </div>
@@ -229,17 +218,27 @@ export default function Home() {
         <div className="mt-12 border-t border-ink/15">
           {FAQS.map(([q, a], i) => (
             <div key={i} className="border-b border-ink/15">
-              <button onClick={() => setOpen(open === i ? null : i)} className="grid w-full grid-cols-[24px_1fr] items-start gap-4 py-6 text-left lg:grid-cols-[24px_1fr_1fr]">
-                <span className="font-mono text-muted">{open === i ? "–" : "+"}</span>
-                <h3 className="font-serif text-2xl">{q}</h3>
-                <motion.p
-                  initial={false}
-                  animate={{ opacity: open === i ? 1 : 0.0, height: open === i ? "auto" : 0 }}
-                  className="overflow-hidden text-sm leading-relaxed text-muted lg:pt-1"
-                >
-                  {a}
-                </motion.p>
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                aria-expanded={open === i}
+                className="flex w-full items-start gap-4 py-6 text-left"
+              >
+                <span className="mt-1 font-mono text-muted">{open === i ? "–" : "+"}</span>
+                <span className="flex-1 font-serif text-2xl">{q}</span>
               </button>
+              <AnimatePresence initial={false}>
+                {open === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="max-w-2xl pb-6 pl-8 text-sm leading-relaxed text-muted">{a}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>
@@ -257,8 +256,8 @@ export default function Home() {
               <div className="mt-2 text-ink/70">Circle Gateway · x402 · Arc testnet · Owncast</div>
             </div>
             <div>
-              <div className="uppercase tracking-[0.18em] text-muted">run locally</div>
-              <div className="mt-2 text-ink/70">npm install --legacy-peer-deps<br />npm run dev</div>
+              <div className="uppercase tracking-[0.18em] text-muted">get started</div>
+              <Link href="/studio" className="mt-2 block text-ink/70 hover:text-leaf">Connect your wallet → open the studio</Link>
             </div>
             <div className="sm:text-right">
               <div className="uppercase tracking-[0.18em] text-muted">status</div>

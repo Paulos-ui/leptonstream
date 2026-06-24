@@ -101,11 +101,11 @@ export default function WatchPage() {
 
   const fundRow = (
     <div className="flex items-center gap-2">
-      <span className="font-mono text-sm text-cream/50">$</span>
+      <span className="font-mono text-sm text-ink/50">$</span>
       <input value={fundAmt} onChange={(e) => setFundAmt(e.target.value)} inputMode="decimal"
-        className="w-20 rounded-md border border-cream/15 bg-ink px-2 py-1.5 font-mono text-sm text-cream" />
+        className="w-20 rounded-md border border-ink/15 bg-white px-2 py-1.5 font-mono text-sm text-ink" />
       <button onClick={onArm} disabled={!!busy || !hasFunds}
-        className="flex-1 rounded-full border border-amber/40 px-4 py-2 font-mono text-[12px] text-amber hover:border-amber disabled:opacity-40">
+        className="flex-1 rounded-full border border-leaf/40 px-4 py-2 font-mono text-[12px] text-leaf hover:border-leaf disabled:opacity-40">
         {busy === "arm" ? "arming…" : "Fund session →"}
       </button>
     </div>
@@ -114,10 +114,10 @@ export default function WatchPage() {
   if (!validCreator) {
     return (
       <main className="mx-auto max-w-xl px-6 py-32 text-center">
-        <h1 className="font-serif text-3xl text-cream">Invalid support link</h1>
-        <p className="mt-4 text-cream/60">
+        <h1 className="font-serif text-3xl text-ink">Invalid support link</h1>
+        <p className="mt-4 text-ink/60">
           A link must point to a creator&apos;s Arc address. Streamers create theirs in the{" "}
-          <Link href="/studio" className="text-amber underline">studio</Link>.
+          <Link href="/studio" className="text-leaf underline">studio</Link>.
         </p>
       </main>
     );
@@ -127,17 +127,17 @@ export default function WatchPage() {
     <main className="min-h-screen px-5 pb-24 pt-24 sm:px-8 lg:px-16">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-eyebrow text-cream/40">
-            <Link href="/" className="text-cream/40 hover:text-leaf">leptonstream</Link>
+          <span className="font-mono text-[11px] uppercase tracking-eyebrow text-muted">
+            <Link href="/" className="text-muted hover:text-leaf">leptonstream</Link>
             {" · "}{oc?.name ? `${oc.name} · ` : ""}{short(creator)}
             {server && oc?.online && <span className="ml-2 text-verdigris">{oc.viewers} watching</span>}
           </span>
           {wallet && (
-            <span className="font-mono text-[11px] text-cream/50">
+            <span className="font-mono text-[11px] text-ink/50">
               {isOwnStream ? (
-                <Link href="/studio" className="text-amber hover:underline">This is you — open your dashboard →</Link>
+                <Link href="/studio" className="text-leaf hover:underline">This is you — open your dashboard →</Link>
               ) : (
-                <>you · <a href={addrUrl(wallet)} target="_blank" rel="noreferrer" className="text-periwinkle/80 hover:text-periwinkle">{short(wallet)}</a></>
+                <>you · <a href={addrUrl(wallet)} target="_blank" rel="noreferrer" className="text-leaf hover:text-leaf">{short(wallet)}</a></>
               )}
             </span>
           )}
@@ -150,34 +150,34 @@ export default function WatchPage() {
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {!s.playing ? (
                 <button onClick={() => void s.start()} disabled={!canStart}
-                  className="rounded-full bg-amber px-6 py-2.5 font-mono text-sm text-ink transition-transform enabled:hover:scale-[1.03] disabled:opacity-40">
-                  {s.state === "stopped" ? "Stopped" : "Start supporting"}
+                  className="rounded-full bg-leaf px-6 py-2.5 font-mono text-sm text-ink transition-transform enabled:hover:scale-[1.03] disabled:opacity-40">
+                  Start supporting
                 </button>
               ) : (
-                <button onClick={s.pause} className="rounded-full border border-cream/25 px-6 py-2.5 font-mono text-sm text-cream hover:border-cream/60">Pause</button>
+                <button onClick={s.pause} className="rounded-full border border-ink/25 px-6 py-2.5 font-mono text-sm text-ink hover:border-ink/60">Pause</button>
               )}
-              <button onClick={s.stop} className="rounded-full border border-cream/15 px-6 py-2.5 font-mono text-sm text-cream/70 hover:border-cream/40">Stop &amp; settle</button>
-              <button onClick={() => setSimUntil(Date.now() + 12000)} className="rounded-full border border-periwinkle/30 px-6 py-2.5 font-mono text-sm text-periwinkle/90 hover:border-periwinkle/70">Simulate quality drop</button>
+              <button onClick={s.stop} className="rounded-full border border-ink/15 px-6 py-2.5 font-mono text-sm text-ink/70 hover:border-ink/40">Stop &amp; settle</button>
+              <button onClick={() => setSimUntil(Date.now() + 12000)} className="rounded-full border border-ink/20 px-6 py-2.5 font-mono text-sm text-leaf hover:border-leaf">Simulate quality drop</button>
             </div>
 
-            <div className="mt-8 rounded-xl border border-cream/10 bg-ink/40 p-5">
-              <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">
-                <span>your ceiling</span><span className="text-cream/70">rate ${RATE.toFixed(6)}/sec</span>
+            <div className="mt-8 rounded-xl border border-ink/10 bg-white/40 p-5">
+              <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-eyebrow text-muted">
+                <span>your ceiling</span><span className="text-ink/70">rate ${RATE.toFixed(6)}/sec</span>
               </div>
               <div className="mt-3 flex items-center gap-4">
                 <input type="range" min={0.02} max={1} step={0.01} value={ceiling} disabled={s.playing}
-                  onChange={(e) => setCeiling(parseFloat(e.target.value))} className="flex-1 accent-amber disabled:opacity-50" />
-                <span className="w-20 text-right font-mono text-lg text-amber tabular-nums">${ceiling.toFixed(2)}</span>
+                  onChange={(e) => setCeiling(parseFloat(e.target.value))} className="flex-1 accent-leaf disabled:opacity-50" />
+                <span className="w-20 text-right font-mono text-lg text-leaf tabular-nums">${ceiling.toFixed(2)}</span>
               </div>
-              <p className="mt-2 font-mono text-[11px] text-cream/40">the session can never spend past this — about {Math.round(ceiling / RATE / 60)} min at full rate</p>
+              <p className="mt-2 font-mono text-[11px] text-muted">the session can never spend past this — about {Math.round(ceiling / RATE / 60)} min at full rate</p>
             </div>
           </div>
 
           <div className="space-y-5">
-            <div className="rounded-xl border border-cream/10 bg-ink/40 p-5">
+            <div className="rounded-xl border border-ink/10 bg-white/40 p-5">
               <div className="flex items-baseline justify-between">
-                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">your session</span>
-                <button onClick={() => void refresh()} className="font-mono text-[10px] text-cream/40 hover:text-cream/70">refresh</button>
+                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">your session</span>
+                <button onClick={() => void refresh()} className="font-mono text-[10px] text-muted hover:text-ink/70">refresh</button>
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-3">
@@ -186,25 +186,25 @@ export default function WatchPage() {
               </div>
 
               {isArmed ? (
-                <div className="mt-4 border-t border-cream/10 pt-4">
+                <div className="mt-4 border-t border-ink/10 pt-4">
                   <p className="font-mono text-[11px] text-verdigris">✓ Session armed — press Start to continue.</p>
-                  <p className="mt-1 font-mono text-[11px] text-cream/40">Session {sessionAddr ? short(sessionAddr) : "…"} · lives in this browser.</p>
-                  <button onClick={() => setAddOpen((o) => !o)} className="mt-3 font-mono text-[11px] text-amber/80 hover:text-amber">
+                  <p className="mt-1 font-mono text-[11px] text-muted">Session {sessionAddr ? short(sessionAddr) : "…"} · lives in this browser.</p>
+                  <button onClick={() => setAddOpen((o) => !o)} className="mt-3 font-mono text-[11px] text-leaf hover:text-leaf">
                     {addOpen ? "– close" : "+ Add funds"}
                   </button>
                   {addOpen && (
                     <div className="mt-2">
                       {!wallet ? (
-                        <button onClick={() => void connect()} disabled={connecting} className="w-full rounded-full bg-cream px-5 py-2.5 font-mono text-sm text-ink disabled:opacity-50">
+                        <button onClick={() => void connect()} disabled={connecting} className="w-full rounded-full bg-ink px-5 py-2.5 font-mono text-sm text-paper disabled:opacity-50">
                           {connecting ? "connecting…" : "Connect wallet to add funds"}
                         </button>
                       ) : !chainOk ? (
-                        <button onClick={() => void switchToArc()} className="w-full rounded-full border border-amber/50 px-4 py-2 font-mono text-[11px] text-amber">Switch to Arc Testnet</button>
+                        <button onClick={() => void switchToArc()} className="w-full rounded-full border border-leaf/50 px-4 py-2 font-mono text-[11px] text-leaf">Switch to Arc Testnet</button>
                       ) : (
                         <>
                           {fundRow}
                           {!hasFunds && (
-                            <p className="mt-2 font-mono text-[11px] text-amber/80">
+                            <p className="mt-2 font-mono text-[11px] text-leaf">
                               No test USDC — <a href={ARC.faucet} target="_blank" rel="noreferrer" className="underline">faucet ↗</a>, then refresh.
                             </p>
                           )}
@@ -214,25 +214,25 @@ export default function WatchPage() {
                   )}
                 </div>
               ) : (
-                <div className="mt-4 border-t border-cream/10 pt-4">
-                  <div className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">arm a capped session</div>
+                <div className="mt-4 border-t border-ink/10 pt-4">
+                  <div className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">arm a capped session</div>
                   {!wallet ? (
-                    <button onClick={() => void connect()} disabled={connecting} className="mt-2 w-full rounded-full bg-cream px-5 py-2.5 font-mono text-sm text-ink disabled:opacity-50">
+                    <button onClick={() => void connect()} disabled={connecting} className="mt-2 w-full rounded-full bg-ink px-5 py-2.5 font-mono text-sm text-paper disabled:opacity-50">
                       {connecting ? "connecting…" : "Connect wallet"}
                     </button>
                   ) : !chainOk ? (
-                    <button onClick={() => void switchToArc()} className="mt-2 w-full rounded-full border border-amber/50 px-4 py-2 font-mono text-[11px] text-amber">Switch to Arc Testnet</button>
+                    <button onClick={() => void switchToArc()} className="mt-2 w-full rounded-full border border-leaf/50 px-4 py-2 font-mono text-[11px] text-leaf">Switch to Arc Testnet</button>
                   ) : (
                     <div className="mt-2">
                       {fundRow}
                       {!hasFunds && (
-                        <p className="mt-2 font-mono text-[11px] text-amber/80">
+                        <p className="mt-2 font-mono text-[11px] text-leaf">
                           Your wallet has no test USDC yet — <a href={ARC.faucet} target="_blank" rel="noreferrer" className="underline">get some from the faucet ↗</a>, then refresh.
                         </p>
                       )}
                     </div>
                   )}
-                  <p className="mt-2 font-mono text-[11px] text-cream/40">
+                  <p className="mt-2 font-mono text-[11px] text-muted">
                     one signature funds a session that streams autonomously to creator {short(creator)}, capped at your ceiling.
                   </p>
                 </div>
@@ -245,43 +245,43 @@ export default function WatchPage() {
               )}
             </div>
 
-            <div className="rounded-xl border border-periwinkle/20 bg-ink/40 p-5">
+            <div className="rounded-xl border border-ink/15 bg-white/40 p-5">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">payment agent</span>
+                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">payment agent</span>
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full" style={{ background: stateColor }} />
                   <span className="font-mono text-sm" style={{ color: stateColor }}>{STATE_LABEL[s.state]}</span>
                 </div>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-4">
-                <Stat label="streamed" value={formatUSDC(s.spentUnits)} accent="#F6A92B" big />
+                <Stat label="streamed" value={formatUSDC(s.spentUnits)} accent="#5BA013" big />
                 <Stat label="watch time" value={`${s.seconds}s`} big />
               </div>
-              <div className="mt-5 border-t border-cream/10 pt-4">
-                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">reasoning</span>
+              <div className="mt-5 border-t border-ink/10 pt-4">
+                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">reasoning</span>
                 <div className="mt-2 space-y-1">
-                  {s.log.length === 0 && <p className="font-mono text-[11px] text-cream/30">press start to begin metering</p>}
+                  {s.log.length === 0 && <p className="font-mono text-[11px] text-ink/30">press start to begin metering</p>}
                   {s.log.map((l, i) => (
                     <div key={i} className="flex gap-3 font-mono text-[11px] leading-snug">
-                      <span className="tabular-nums text-periwinkle/60">{String(l.t).padStart(3, "0")}s</span>
-                      <span className={i === s.log.length - 1 ? "text-cream/80" : "text-cream/45"}>{l.line}</span>
+                      <span className="tabular-nums text-muted">{String(l.t).padStart(3, "0")}s</span>
+                      <span className={i === s.log.length - 1 ? "text-ink/75" : "text-muted"}>{l.line}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-cream/10 bg-ink/40 p-5">
+            <div className="rounded-xl border border-ink/10 bg-white/40 p-5">
               <div className="flex items-baseline justify-between">
-                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">settled on arc</span>
+                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">settled on arc</span>
                 <span className="font-mono text-[11px] text-verdigris">{s.settled.length} batches</span>
               </div>
               <div className="mt-3 max-h-48 space-y-1.5 overflow-y-auto">
-                {s.settled.length === 0 && <p className="font-mono text-[11px] text-cream/30">batches settle every ~$0.005</p>}
+                {s.settled.length === 0 && <p className="font-mono text-[11px] text-ink/30">batches settle every ~$0.005</p>}
                 {s.settled.slice().reverse().map((b) => (
                   <div key={b.seq} className="flex items-center justify-between font-mono text-[11px]">
-                    <span className="text-cream/60">seq {String(b.seq).padStart(2, "0")} · {formatUSDC(b.units)}</span>
-                    {b.tx ? <a href={txUrl(b.tx)} target="_blank" rel="noreferrer" className="text-periwinkle/70 hover:text-periwinkle">{b.tx.slice(0, 10)}… ↗</a> : <span className="text-cream/30">pending</span>}
+                    <span className="text-ink/60">seq {String(b.seq).padStart(2, "0")} · {formatUSDC(b.units)}</span>
+                    {b.tx ? <a href={txUrl(b.tx)} target="_blank" rel="noreferrer" className="text-leaf hover:text-leaf">{b.tx.slice(0, 10)}… ↗</a> : <span className="text-ink/30">pending</span>}
                   </div>
                 ))}
               </div>
@@ -296,8 +296,8 @@ export default function WatchPage() {
 function Stat({ label, value, accent, big }: { label: string; value: string; accent?: string; big?: boolean }) {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">{label}</div>
-      <div className={`mt-1 font-mono tabular-nums ${big ? "text-2xl" : "text-sm"}`} style={{ color: accent ?? "#F4ECDD" }}>{value}</div>
+      <div className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">{label}</div>
+      <div className={`mt-1 font-mono tabular-nums ${big ? "text-2xl" : "text-sm"}`} style={{ color: accent ?? "#16100C" }}>{value}</div>
     </div>
   );
 }
