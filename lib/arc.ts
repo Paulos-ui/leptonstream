@@ -10,6 +10,8 @@ export const ARC = {
   faucet: "https://faucet.circle.com",
   usdc: "0x3600000000000000000000000000000000000000",
   gatewayWallet: "0x0077777d7EBA4688BDeF3E311b846F25870A19B9",
+  domain: 26, // Arc testnet Gateway domain id
+  gatewayApi: "https://gateway-api-testnet.circle.com/v1",
   facilitatorUrl:
     process.env.FACILITATOR_URL ?? "https://gateway-api-testnet.circle.com",
 };

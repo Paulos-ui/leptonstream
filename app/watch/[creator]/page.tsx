@@ -11,7 +11,7 @@ import { formatUSDC } from "@/core/money";
 import { ARC, txUrl, addrUrl } from "@/lib/arc";
 import { STATE_COLOR, STATE_LABEL, short } from "@/lib/format";
 import { loadOrCreateKey, addressOf, makeClient, depositToGateway } from "@/lib/wallet";
-import { readWalletUsdc, readGatewayAvailable, fundSession, waitForTx, walletError } from "@/lib/connect";
+import { fetchBalances, fundSession, waitForTx, walletError } from "@/lib/connect";
 import { useWallet } from "@/hooks/useWallet";
 import { getStatus, getInstanceName, hlsUrl } from "@/lib/owncast";
 
@@ -70,8 +70,8 @@ export default function WatchPage() {
 
   const refresh = useCallback(async () => {
     try {
-      if (wallet) setWalletUsdc(await readWalletUsdc(wallet));
-      if (sessionAddr) setArmed(await readGatewayAvailable(sessionAddr as Address));
+      if (wallet) setWalletUsdc((await fetchBalances(wallet)).walletUsdc);
+      if (sessionAddr) setArmed((await fetchBalances(sessionAddr)).available);
     } catch { /* contextual */ }
   }, [wallet, sessionAddr]);
 

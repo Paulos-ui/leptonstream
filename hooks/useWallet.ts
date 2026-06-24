@@ -4,15 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import type { Address } from "viem";
 import { getProvider, connectWallet, ensureArc, isOnArc, walletError, ARC_HEX } from "@/lib/connect";
 
+const WKEY = "lepton.wallet.addr";
+
 /**
  * One stable wallet connection for the whole session.
  *
- * Wallet extensions (notably in Brave) inject window.ethereum *after* first
- * paint, so we wait for it (event + short poll) before reading state. Once the
- * provider appears we silently restore the session via eth_accounts (no popup),
- * track account/chain via provider events, and only prompt on explicit connect.
- * `ready` flips true once restore finishes (or no wallet is found), so the UI
- * shows a brief "restoring" state instead of flashing "Connect" then jumping in.
+ * On load we OPTIMISTICALLY restore the last connected address from
+ * localStorage so a refresh never flashes back to "Connect" — then we reconcile
+ * against the live provider (which injects after first paint, especially in
+ * Brave). eth_accounts restores silently with no popup; we only drop the
+ * session on an explicit disconnect event. Prompts happen on connect/sign only.
  */
 export function useWallet() {
   const [account, setAccount] = useState<Address | null>(null);
@@ -27,12 +28,31 @@ export function useWallet() {
     let detach = () => {};
     let stopWaiting = () => {};
 
+    // Optimistic restore — show the remembered account immediately.
+    try {
+      const remembered = localStorage.getItem(WKEY) as Address | null;
+      if (remembered) {
+        setAccount(remembered);
+        setReady(true);
+      }
+    } catch {
+      /* ignore */
+    }
+
     const start = async (p: NonNullable<ReturnType<typeof getProvider>>) => {
       if (!alive) return;
       setHasProvider(true);
 
       const onAccounts = (...a: unknown[]) => {
-        if (alive) setAccount(((a[0] as Address[]) ?? [])[0] ?? null);
+        if (!alive) return;
+        const a0 = ((a[0] as Address[]) ?? [])[0] ?? null;
+        setAccount(a0);
+        try {
+          if (a0) localStorage.setItem(WKEY, a0);
+          else localStorage.removeItem(WKEY); // explicit disconnect
+        } catch {
+          /* ignore */
+        }
       };
       const onChain = (...a: unknown[]) => {
         if (alive) setChainOk((a[0] as string)?.toLowerCase?.() === ARC_HEX.toLowerCase());
@@ -45,11 +65,15 @@ export function useWallet() {
       };
 
       try {
-        const accts = (await p.request({ method: "eth_accounts" })) as Address[]; // no prompt
-        if (alive && accts?.[0]) setAccount(accts[0]);
+        const accts = (await p.request({ method: "eth_accounts" })) as Address[];
+        if (alive && accts?.[0]) {
+          setAccount(accts[0]);
+          setError("");
+          try { localStorage.setItem(WKEY, accts[0]); } catch { /* ignore */ }
+        }
         if (alive) setChainOk(await isOnArc());
       } catch {
-        /* ignore */
+        /* keep optimistic */
       } finally {
         if (alive) setReady(true);
       }
@@ -66,7 +90,6 @@ export function useWallet() {
           stopWaiting();
           void start(p);
         } else if (++tries > 30) {
-          // ~3s with no injected provider → genuinely no wallet
           stopWaiting();
           if (alive) setReady(true);
         }
@@ -94,6 +117,8 @@ export function useWallet() {
       const addr = await connectWallet();
       setAccount(addr);
       setChainOk(true);
+      setError("");
+      try { localStorage.setItem(WKEY, addr); } catch { /* ignore */ }
     } catch (e) {
       setError(walletError(e));
     } finally {
@@ -111,5 +136,8 @@ export function useWallet() {
     }
   }, []);
 
-  return { account, chainOk, connecting, hasProvider, ready, error, connect, switchToArc };
+  // Never surface a connect error once we have an account.
+  const visibleError = account ? "" : error;
+
+  return { account, chainOk, connecting, hasProvider, ready, error: visibleError, connect, switchToArc };
 }

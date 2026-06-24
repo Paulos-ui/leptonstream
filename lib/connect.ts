@@ -7,7 +7,6 @@ import {
   http,
   defineChain,
   parseUnits,
-  formatUnits,
   type Hex,
   type Address,
 } from "viem";
@@ -115,46 +114,39 @@ export async function ensureArc(): Promise<void> {
   }
 }
 
-// ---- Key-free reads (no signing) -----------------------------------------
+// ---- Reads via our server (authoritative Gateway API; no browser CORS) -----
 
-export async function readWalletUsdc(addr: Address): Promise<string> {
-  const v = (await publicClient().readContract({
-    address: ARC.usdc as Address,
-    abi: ERC20_ABI,
-    functionName: "balanceOf",
-    args: [addr],
-  })) as bigint;
-  return formatUnits(v, 6);
+export interface Balances {
+  walletUsdc: string;
+  available: string;
+  withdrawing: string;
+  withdrawable: string;
 }
 
-export async function readGatewayAvailable(addr: Address): Promise<string> {
-  const v = (await publicClient().readContract({
-    address: ARC.gatewayWallet as Address,
-    abi: GATEWAY_WALLET_ABI,
-    functionName: "availableBalance",
-    args: [ARC.usdc as Address, addr],
-  })) as bigint;
-  return formatUnits(v, 6);
+export async function fetchBalances(addr: string): Promise<Balances> {
+  const r = await fetch(`/api/balance/${addr}`, { cache: "no-store" });
+  const d = await r.json();
+  return {
+    walletUsdc: d.walletUsdc ?? "0",
+    available: d.available ?? "0",
+    withdrawing: d.withdrawing ?? "0",
+    withdrawable: d.withdrawable ?? "0",
+  };
 }
 
-export async function readWithdrawable(addr: Address): Promise<string> {
-  const v = (await publicClient().readContract({
-    address: ARC.gatewayWallet as Address,
-    abi: GATEWAY_WALLET_ABI,
-    functionName: "withdrawableBalance",
-    args: [ARC.usdc as Address, addr],
-  })) as bigint;
-  return formatUnits(v, 6);
+export interface Incoming {
+  id: string;
+  status: string;
+  from: string;
+  amount: string;
+  createdAt: string;
+  tx?: string;
 }
 
-export async function readMaturing(addr: Address): Promise<string> {
-  const v = (await publicClient().readContract({
-    address: ARC.gatewayWallet as Address,
-    abi: GATEWAY_WALLET_ABI,
-    functionName: "withdrawingBalance",
-    args: [ARC.usdc as Address, addr],
-  })) as bigint;
-  return formatUnits(v, 6);
+export async function fetchTransfers(addr: string): Promise<Incoming[]> {
+  const r = await fetch(`/api/transfers/${addr}`, { cache: "no-store" });
+  const d = await r.json();
+  return d.transfers ?? [];
 }
 
 /** Read the wallet's current chain without prompting. */
