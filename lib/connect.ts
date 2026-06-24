@@ -24,10 +24,11 @@ export const arcChain = defineChain({
   testnet: true,
 });
 
-const ARC_HEX = `0x${ARC.chainId.toString(16)}` as const;
 
 interface Eip1193 {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+  on?(event: string, handler: (...args: unknown[]) => void): void;
+  removeListener?(event: string, handler: (...args: unknown[]) => void): void;
 }
 
 function getEthereum(): Eip1193 {
@@ -35,6 +36,13 @@ function getEthereum(): Eip1193 {
   if (!eth) throw new Error("No wallet found. Install MetaMask or a compatible wallet.");
   return eth;
 }
+
+/** Provider accessor that never throws (returns null when absent). */
+export function getProvider(): Eip1193 | null {
+  return (globalThis as { ethereum?: Eip1193 }).ethereum ?? null;
+}
+
+export const ARC_HEX = `0x${ARC.chainId.toString(16)}` as const;
 
 export function hasWallet(): boolean {
   return typeof window !== "undefined" && !!(window as { ethereum?: unknown }).ethereum;
@@ -55,8 +63,14 @@ export function walletError(e: unknown): string {
   ) {
     return "";
   }
-  // First line only, hard-capped — never dump a viem stack into the UI.
-  return msg.split("\n")[0].slice(0, 140);
+  // First line only, with any viem arg/contract dump stripped — never leak a
+  // raw request blob into the UI.
+  const clean = msg
+    .split("\n")[0]
+    .split("Request Arguments")[0]
+    .split("Contract Call")[0]
+    .trim();
+  return (clean || "Something went wrong.").slice(0, 140);
 }
 
 const publicClient = () =>
@@ -131,6 +145,28 @@ export async function readWithdrawable(addr: Address): Promise<string> {
     args: [ARC.usdc as Address, addr],
   })) as bigint;
   return formatUnits(v, 6);
+}
+
+export async function readMaturing(addr: Address): Promise<string> {
+  const v = (await publicClient().readContract({
+    address: ARC.gatewayWallet as Address,
+    abi: GATEWAY_WALLET_ABI,
+    functionName: "withdrawingBalance",
+    args: [ARC.usdc as Address, addr],
+  })) as bigint;
+  return formatUnits(v, 6);
+}
+
+/** Read the wallet's current chain without prompting. */
+export async function isOnArc(): Promise<boolean> {
+  const p = getProvider();
+  if (!p) return false;
+  try {
+    const id = (await p.request({ method: "eth_chainId" })) as string;
+    return id?.toLowerCase() === ARC_HEX.toLowerCase();
+  } catch {
+    return false;
+  }
 }
 
 /** Gate dependent steps on confirmation (e.g. funding before deposit). */

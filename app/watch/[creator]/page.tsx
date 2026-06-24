@@ -11,7 +11,8 @@ import { formatUSDC } from "@/core/money";
 import { ARC, txUrl, addrUrl } from "@/lib/arc";
 import { STATE_COLOR, STATE_LABEL, short } from "@/lib/format";
 import { loadOrCreateKey, addressOf, makeClient, depositToGateway } from "@/lib/wallet";
-import { hasWallet, connectWallet, readWalletUsdc, readGatewayAvailable, fundSession, waitForTx, walletError } from "@/lib/connect";
+import { hasWallet, readWalletUsdc, readGatewayAvailable, fundSession, waitForTx, walletError } from "@/lib/connect";
+import { useWallet } from "@/hooks/useWallet";
 import { getStatus, getInstanceName, hlsUrl } from "@/lib/owncast";
 
 const RATE = 0.000124; // $/sec
@@ -25,7 +26,7 @@ export default function WatchPage() {
   const validCreator = isAddress(creator);
 
   const [ceiling, setCeiling] = useState(0.1);
-  const [wallet, setWallet] = useState<Address | null>(null);
+  const { account: wallet, chainOk, connecting, connect, switchToArc, error: connErr } = useWallet();
   const [pk, setPk] = useState<Hex | null>(null);
   const [sessionAddr, setSessionAddr] = useState<Address | "">("");
   const [walletUsdc, setWalletUsdc] = useState("—");
@@ -47,7 +48,7 @@ export default function WatchPage() {
     const poll = async () => {
       try {
         const s = await getStatus(server);
-        if (alive) setOc((p) => ({ online: s.online, viewers: s.viewerCount, name: p?.name }));
+        if (alive && s) setOc((p) => ({ online: s.online, viewers: s.viewerCount, name: p?.name }));
       } catch {
         if (alive) setOc(null);
       }
@@ -75,12 +76,6 @@ export default function WatchPage() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const onConnect = async () => {
-    setErr(""); setBusy("connect");
-    try { setWallet(await connectWallet()); }
-    catch (e) { setErr(walletError(e)); }
-    finally { setBusy(""); }
-  };
 
   const onArm = async () => {
     if (!wallet || !pk || !sessionAddr) return;
@@ -162,13 +157,18 @@ export default function WatchPage() {
             <div className="rounded-xl border border-cream/10 bg-ink/40 p-5">
               <div className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">your wallet</div>
               {!wallet ? (
-                <button onClick={onConnect} disabled={busy === "connect"}
+                <button onClick={() => void connect()} disabled={connecting}
                   className="mt-3 w-full rounded-full bg-cream px-5 py-2.5 font-mono text-sm text-ink transition-transform hover:scale-[1.02] disabled:opacity-50">
-                  {busy === "connect" ? "connecting…" : hasWallet() ? "Connect wallet" : "Install a wallet to connect"}
+                  {connecting ? "connecting…" : hasWallet() ? "Connect wallet" : "Install a wallet to connect"}
                 </button>
               ) : (
                 <>
                   <a href={addrUrl(wallet)} target="_blank" rel="noreferrer" className="mt-2 block font-mono text-sm text-cream/80 hover:text-amber">{short(wallet)}</a>
+                  {!chainOk && (
+                    <button onClick={() => void switchToArc()} className="mt-2 w-full rounded-full border border-amber/50 px-4 py-2 font-mono text-[11px] text-amber hover:border-amber">
+                      Switch to Arc Testnet
+                    </button>
+                  )}
                   <div className="mt-3 grid grid-cols-2 gap-3">
                     <Stat label="wallet usdc" value={walletUsdc === "—" ? "—" : `$${parseFloat(walletUsdc).toFixed(4)}`} />
                     <Stat label="session armed" value={`$${parseFloat(armed).toFixed(4)}`} accent="#5E8F86" />
@@ -196,9 +196,9 @@ export default function WatchPage() {
                   </div>
                 </>
               )}
-              {err && (
+              {(err || connErr) && (
                 <div className="mt-3 max-h-24 overflow-auto rounded-md border border-coral/30 bg-coral/5 p-2 font-mono text-[11px] leading-snug text-coral/90 break-words">
-                  {err}
+                  {err || connErr}
                 </div>
               )}
               {wallet && !canStart && hasFunds && <p className="mt-3 font-mono text-[11px] text-cream/50">Fund a session to start.</p>}

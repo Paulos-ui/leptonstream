@@ -1,7 +1,11 @@
 (function () {
   // LeptonStream embed — drop onto any Owncast page:
   // <script src="https://<app>/embed.js" data-payee="0x..." data-server="https://your.owncast"></script>
-  var script = document.currentScript;
+  var script = document.currentScript ||
+    (function () {
+      var ss = document.querySelectorAll('script[src*="/embed.js"]');
+      return ss[ss.length - 1] || null;
+    })();
   if (!script) return;
   var payee = script.getAttribute("data-payee");
   var server = script.getAttribute("data-server") || "";

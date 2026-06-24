@@ -1,11 +1,10 @@
-// Owncast exposes a public, unauthenticated API on every instance. We use it to
-// show the streamer's real LIVE status + viewer count and to pull their HLS feed
-// into our player — no changes to their server required.
-
+// Owncast public, unauthenticated endpoints. Lets LeptonStream ride alongside
+// a streamer's existing Owncast instance without touching their server.
 export interface OwncastStatus {
   online: boolean;
   viewerCount: number;
-  streamTitle?: string;
+  name?: string;
+  lastConnectTime?: string | null;
 }
 
 export function normalizeServer(server: string): string {
@@ -18,32 +17,32 @@ export function hlsUrl(server: string): string {
   return `${normalizeServer(server)}/hls/stream.m3u8`;
 }
 
-export async function getStatus(server: string): Promise<OwncastStatus> {
-  const res = await fetch(`${normalizeServer(server)}/api/status`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`status ${res.status}`);
-  const d = (await res.json()) as {
-    online?: boolean;
-    viewerCount?: number;
-    streamTitle?: string;
-  };
-  return {
-    online: !!d.online,
-    viewerCount: d.viewerCount ?? 0,
-    streamTitle: d.streamTitle,
-  };
+export async function getStatus(server: string): Promise<OwncastStatus | null> {
+  const base = normalizeServer(server);
+  try {
+    const res = await fetch(`${base}/api/status`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const s = await res.json();
+    return {
+      online: !!s.online,
+      viewerCount: Number(s.viewerCount ?? 0),
+      lastConnectTime: s.lastConnectTime ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
-export async function getInstanceName(server: string): Promise<string | undefined> {
+/** Instance display name from the public config endpoint (best-effort). */
+export async function getInstanceName(server: string): Promise<string | null> {
   try {
     const res = await fetch(`${normalizeServer(server)}/api/config`, {
       cache: "no-store",
     });
-    if (!res.ok) return undefined;
-    const d = (await res.json()) as { name?: string };
-    return d.name;
+    if (!res.ok) return null;
+    const c = await res.json();
+    return c?.name ?? c?.instanceDetails?.name ?? null;
   } catch {
-    return undefined;
+    return null;
   }
 }

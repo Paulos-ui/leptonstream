@@ -32,6 +32,16 @@ export const GATEWAY_WALLET_ABI = [
     outputs: [{ name: "", type: "uint256" }],
   },
   {
+    name: "withdrawingBalance",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "depositor", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
     name: "initiateWithdrawal",
     type: "function",
     stateMutability: "nonpayable",
