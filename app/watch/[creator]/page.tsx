@@ -11,7 +11,7 @@ import { formatUSDC } from "@/core/money";
 import { ARC, txUrl, addrUrl } from "@/lib/arc";
 import { STATE_COLOR, STATE_LABEL, short } from "@/lib/format";
 import { loadOrCreateKey, addressOf, makeClient, depositToGateway } from "@/lib/wallet";
-import { hasWallet, readWalletUsdc, readGatewayAvailable, fundSession, waitForTx, walletError } from "@/lib/connect";
+import { readWalletUsdc, readGatewayAvailable, fundSession, waitForTx, walletError } from "@/lib/connect";
 import { useWallet } from "@/hooks/useWallet";
 import { getStatus, getInstanceName, hlsUrl } from "@/lib/owncast";
 
@@ -159,7 +159,7 @@ export default function WatchPage() {
               {!wallet ? (
                 <button onClick={() => void connect()} disabled={connecting}
                   className="mt-3 w-full rounded-full bg-cream px-5 py-2.5 font-mono text-sm text-ink transition-transform hover:scale-[1.02] disabled:opacity-50">
-                  {connecting ? "connecting…" : hasWallet() ? "Connect wallet" : "Install a wallet to connect"}
+                  {connecting ? "connecting…" : "Connect wallet"}
                 </button>
               ) : (
                 <>

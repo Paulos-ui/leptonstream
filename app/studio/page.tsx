@@ -35,7 +35,7 @@ function useCountUp(target: number) {
 }
 
 export default function DashboardPage() {
-  const { account, chainOk, connecting, connect, switchToArc, error: connErr } = useWallet();
+  const { account, chainOk, connecting, connect, switchToArc, ready, error: connErr } = useWallet();
   const [origin, setOrigin] = useState("");
   const [server, setServer] = useState("");
   const [available, setAvailable] = useState(0);
@@ -89,6 +89,15 @@ export default function DashboardPage() {
   };
 
   const heroVal = useCountUp(available);
+
+  // ---- Restoring session (provider injects after paint) ----
+  if (!ready) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <span className="font-mono text-[11px] uppercase tracking-eyebrow text-cream/40 animate-pulse">restoring session…</span>
+      </main>
+    );
+  }
 
   // ---- Not connected ----
   if (!account) {
