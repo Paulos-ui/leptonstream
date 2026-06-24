@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import "./globals.css";
+import Link from "next/link";
 import Wordmark from "@/components/ui/Wordmark";
 
 const serif = Instrument_Serif({
@@ -35,6 +36,11 @@ export default function RootLayout({
     >
       <body>
         <Wordmark />
+        <nav className="fixed right-5 top-5 z-50 flex items-center gap-5 font-mono text-[12px]">
+          <Link href="/studio" className="text-cream/70 transition-colors hover:text-amber">
+            Dashboard
+          </Link>
+        </nav>
         {/* Film grain keeps the dark warm rather than sterile-digital. */}
         <div
           aria-hidden="true"

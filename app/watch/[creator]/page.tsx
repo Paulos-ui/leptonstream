@@ -32,6 +32,7 @@ export default function WatchPage() {
   const [walletUsdc, setWalletUsdc] = useState("—");
   const [armed, setArmed] = useState("0");
   const [fundAmt, setFundAmt] = useState("1.00");
+  const [addOpen, setAddOpen] = useState(false);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
 
@@ -93,8 +94,22 @@ export default function WatchPage() {
   const s = useStreamSession({ creator, ratePerSecUsd: RATE, ceilingUsd: ceiling, demo: safe, privateKey: pk, quality });
 
   const hasFunds = parseFloat(walletUsdc) > 0;
-  const canStart = safe || parseFloat(armed) > 0;
+  const isArmed = parseFloat(armed) > 0;
+  const canStart = safe || isArmed;
+  const isOwnStream = !!wallet && wallet.toLowerCase() === creator.toLowerCase();
   const stateColor = STATE_COLOR[s.state];
+
+  const fundRow = (
+    <div className="flex items-center gap-2">
+      <span className="font-mono text-sm text-cream/50">$</span>
+      <input value={fundAmt} onChange={(e) => setFundAmt(e.target.value)} inputMode="decimal"
+        className="w-20 rounded-md border border-cream/15 bg-ink px-2 py-1.5 font-mono text-sm text-cream" />
+      <button onClick={onArm} disabled={!!busy || !hasFunds}
+        className="flex-1 rounded-full border border-amber/40 px-4 py-2 font-mono text-[12px] text-amber hover:border-amber disabled:opacity-40">
+        {busy === "arm" ? "arming…" : "Fund session →"}
+      </button>
+    </div>
+  );
 
   if (!validCreator) {
     return (
@@ -118,7 +133,11 @@ export default function WatchPage() {
           </span>
           {wallet && (
             <span className="font-mono text-[11px] text-cream/50">
-              you · <a href={addrUrl(wallet)} target="_blank" rel="noreferrer" className="text-periwinkle/80 hover:text-periwinkle">{short(wallet)}</a>
+              {isOwnStream ? (
+                <Link href="/studio" className="text-amber hover:underline">This is you — open your dashboard →</Link>
+              ) : (
+                <>you · <a href={addrUrl(wallet)} target="_blank" rel="noreferrer" className="text-periwinkle/80 hover:text-periwinkle">{short(wallet)}</a></>
+              )}
             </span>
           )}
         </header>
@@ -155,53 +174,74 @@ export default function WatchPage() {
 
           <div className="space-y-5">
             <div className="rounded-xl border border-cream/10 bg-ink/40 p-5">
-              <div className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">your wallet</div>
-              {!wallet ? (
-                <button onClick={() => void connect()} disabled={connecting}
-                  className="mt-3 w-full rounded-full bg-cream px-5 py-2.5 font-mono text-sm text-ink transition-transform hover:scale-[1.02] disabled:opacity-50">
-                  {connecting ? "connecting…" : "Connect wallet"}
-                </button>
-              ) : (
-                <>
-                  <a href={addrUrl(wallet)} target="_blank" rel="noreferrer" className="mt-2 block font-mono text-sm text-cream/80 hover:text-amber">{short(wallet)}</a>
-                  {!chainOk && (
-                    <button onClick={() => void switchToArc()} className="mt-2 w-full rounded-full border border-amber/50 px-4 py-2 font-mono text-[11px] text-amber hover:border-amber">
-                      Switch to Arc Testnet
-                    </button>
-                  )}
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <Stat label="wallet usdc" value={walletUsdc === "—" ? "—" : `$${parseFloat(walletUsdc).toFixed(4)}`} />
-                    <Stat label="session armed" value={`$${parseFloat(armed).toFixed(4)}`} accent="#5E8F86" />
-                  </div>
-                  <div className="mt-4 border-t border-cream/10 pt-4">
-                    <div className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">arm a capped session</div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="font-mono text-sm text-cream/50">$</span>
-                      <input value={fundAmt} onChange={(e) => setFundAmt(e.target.value)} inputMode="decimal"
-                        className="w-20 rounded-md border border-cream/15 bg-ink px-2 py-1.5 font-mono text-sm text-cream" />
-                      <button onClick={onArm} disabled={!!busy || !hasFunds}
-                        className="flex-1 rounded-full border border-amber/40 px-4 py-2 font-mono text-[12px] text-amber hover:border-amber disabled:opacity-40">
-                        {busy === "arm" ? "arming…" : "Fund session →"}
-                      </button>
+              <div className="flex items-baseline justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">your session</span>
+                <button onClick={() => void refresh()} className="font-mono text-[10px] text-cream/40 hover:text-cream/70">refresh</button>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <Stat label="session armed" value={`$${parseFloat(armed).toFixed(4)}`} accent="#5E8F86" big />
+                <Stat label="wallet usdc" value={wallet ? (walletUsdc === "—" ? "…" : `$${parseFloat(walletUsdc).toFixed(4)}`) : "—"} />
+              </div>
+
+              {isArmed ? (
+                <div className="mt-4 border-t border-cream/10 pt-4">
+                  <p className="font-mono text-[11px] text-verdigris">✓ Session armed — press Start to continue.</p>
+                  <p className="mt-1 font-mono text-[11px] text-cream/40">Session {sessionAddr ? short(sessionAddr) : "…"} · lives in this browser.</p>
+                  <button onClick={() => setAddOpen((o) => !o)} className="mt-3 font-mono text-[11px] text-amber/80 hover:text-amber">
+                    {addOpen ? "– close" : "+ Add funds"}
+                  </button>
+                  {addOpen && (
+                    <div className="mt-2">
+                      {!wallet ? (
+                        <button onClick={() => void connect()} disabled={connecting} className="w-full rounded-full bg-cream px-5 py-2.5 font-mono text-sm text-ink disabled:opacity-50">
+                          {connecting ? "connecting…" : "Connect wallet to add funds"}
+                        </button>
+                      ) : !chainOk ? (
+                        <button onClick={() => void switchToArc()} className="w-full rounded-full border border-amber/50 px-4 py-2 font-mono text-[11px] text-amber">Switch to Arc Testnet</button>
+                      ) : (
+                        <>
+                          {fundRow}
+                          {!hasFunds && (
+                            <p className="mt-2 font-mono text-[11px] text-amber/80">
+                              No test USDC — <a href={ARC.faucet} target="_blank" rel="noreferrer" className="underline">faucet ↗</a>, then refresh.
+                            </p>
+                          )}
+                        </>
+                      )}
                     </div>
-                    {!hasFunds && (
-                      <p className="mt-2 font-mono text-[11px] text-amber/80">
-                        Your wallet has no test USDC yet — <a href={ARC.faucet} target="_blank" rel="noreferrer" className="underline">get some from the faucet ↗</a>, then refresh.
-                      </p>
-                    )}
-                    <p className="mt-2 font-mono text-[11px] text-cream/40">
-                      one signature funds a session that streams autonomously to creator {short(creator)}, capped at your ceiling. Session {sessionAddr ? short(sessionAddr) : "…"} on Arc.
-                    </p>
-                    <button onClick={() => void refresh()} className="mt-2 font-mono text-[11px] text-cream/50 hover:text-cream/80">refresh balances</button>
-                  </div>
-                </>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 border-t border-cream/10 pt-4">
+                  <div className="font-mono text-[10px] uppercase tracking-eyebrow text-cream/40">arm a capped session</div>
+                  {!wallet ? (
+                    <button onClick={() => void connect()} disabled={connecting} className="mt-2 w-full rounded-full bg-cream px-5 py-2.5 font-mono text-sm text-ink disabled:opacity-50">
+                      {connecting ? "connecting…" : "Connect wallet"}
+                    </button>
+                  ) : !chainOk ? (
+                    <button onClick={() => void switchToArc()} className="mt-2 w-full rounded-full border border-amber/50 px-4 py-2 font-mono text-[11px] text-amber">Switch to Arc Testnet</button>
+                  ) : (
+                    <div className="mt-2">
+                      {fundRow}
+                      {!hasFunds && (
+                        <p className="mt-2 font-mono text-[11px] text-amber/80">
+                          Your wallet has no test USDC yet — <a href={ARC.faucet} target="_blank" rel="noreferrer" className="underline">get some from the faucet ↗</a>, then refresh.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <p className="mt-2 font-mono text-[11px] text-cream/40">
+                    one signature funds a session that streams autonomously to creator {short(creator)}, capped at your ceiling.
+                  </p>
+                </div>
               )}
+
               {(err || connErr) && (
                 <div className="mt-3 max-h-24 overflow-auto rounded-md border border-coral/30 bg-coral/5 p-2 font-mono text-[11px] leading-snug text-coral/90 break-words">
                   {err || connErr}
                 </div>
               )}
-              {wallet && !canStart && hasFunds && <p className="mt-3 font-mono text-[11px] text-cream/50">Fund a session to start.</p>}
             </div>
 
             <div className="rounded-xl border border-periwinkle/20 bg-ink/40 p-5">
