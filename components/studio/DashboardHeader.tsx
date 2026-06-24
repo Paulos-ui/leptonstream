@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { addrUrl } from "@/lib/arc";
 import { short } from "@/lib/format";
@@ -21,7 +22,9 @@ export default function DashboardHeader({
       className="mb-8 flex flex-wrap items-center justify-between gap-3"
     >
       <div>
-        <span className="font-mono text-[11px] uppercase tracking-eyebrow text-cream/40">dashboard</span>
+        <Link href="/" className="font-mono text-[11px] uppercase tracking-eyebrow text-cream/40 hover:text-leaf">
+          ← leptonstream
+        </Link>
         <h1 className="mt-1 font-serif text-3xl text-cream">Your earnings</h1>
       </div>
       <div className="flex items-center gap-3">

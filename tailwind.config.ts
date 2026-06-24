@@ -15,6 +15,9 @@ const config: Config = {
         periwinkle: "#8B8BFA", // agent intelligence (cool against the warm)
         cream: "#F4ECDD",      // editorial text / light surfaces
         verdigris: "#5E8F86",  // settled / confirmed (oxidized aqueduct copper)
+        paper: "#EFE9DD",      // warm editorial page background
+        leaf: "#5BA013",       // signature green — value in flight
+        muted: "#6F6656",      // secondary ink on paper
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],

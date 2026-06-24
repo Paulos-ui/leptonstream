@@ -128,7 +128,8 @@ export default function WatchPage() {
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-2">
           <span className="font-mono text-[11px] uppercase tracking-eyebrow text-cream/40">
-            {oc?.name ? `${oc.name} · ` : "supporting · "}{short(creator)}
+            <Link href="/" className="text-cream/40 hover:text-leaf">leptonstream</Link>
+            {" · "}{oc?.name ? `${oc.name} · ` : ""}{short(creator)}
             {server && oc?.online && <span className="ml-2 text-verdigris">{oc.viewers} watching</span>}
           </span>
           {wallet && (
