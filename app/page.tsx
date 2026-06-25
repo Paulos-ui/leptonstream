@@ -212,8 +212,9 @@ export default function Home() {
       {/* FAQ */}
       <section id="faq" className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
         <Reveal>
-          <SectionMark n="05" label="questions, answered" />
-          <h2 className="mt-8 font-serif text-6xl sm:text-7xl">answered.</h2>
+          <SectionMark n="05" label="good to know" />
+          <h2 className="mt-8 font-serif text-7xl tracking-tight sm:text-8xl">FAQ<span className="text-leaf">.</span></h2>
+          <p className="mt-4 max-w-md text-muted">Everything you might be wondering about getting paid by the second.</p>
         </Reveal>
         <div className="mt-12 border-t border-ink/15">
           {FAQS.map(([q, a], i) => (

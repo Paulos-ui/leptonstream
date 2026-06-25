@@ -31,7 +31,7 @@ export default function WatchPage() {
   const [sessionAddr, setSessionAddr] = useState<Address | "">("");
   const [walletUsdc, setWalletUsdc] = useState("—");
   const [armed, setArmed] = useState("0");
-  const [fundAmt, setFundAmt] = useState("1.00");
+  const [fundAmt, setFundAmt] = useState("0.10");
   const [addOpen, setAddOpen] = useState(false);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
@@ -86,7 +86,9 @@ export default function WatchPage() {
       await waitForTx(tx);
       const client = await makeClient(pk);
       await depositToGateway(client, fundAmt);
-      await refresh();
+      // Reflect the deposit right away so Start enables without a second fund.
+      setArmed((p) => String((parseFloat(p) || 0) + (parseFloat(fundAmt) || 0)));
+      void refresh();
     } catch (e) { setErr(walletError(e)); }
     finally { setBusy(""); }
   };
@@ -233,7 +235,7 @@ export default function WatchPage() {
                     </div>
                   )}
                   <p className="mt-2 font-mono text-[11px] text-muted">
-                    one signature funds a session that streams autonomously to creator {short(creator)}, capped at your ceiling.
+                    The video plays for free. Funding starts the per-second support to {short(creator)} — one signature deposits the amount above into a session capped at your ceiling. You can start the moment it confirms.
                   </p>
                 </div>
               )}

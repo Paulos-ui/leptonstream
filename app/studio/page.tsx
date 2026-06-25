@@ -25,14 +25,17 @@ export default function DashboardPage() {
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState("");
-  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(true);
 
   useEffect(() => setOrigin(window.location.origin), []);
 
-  const srv = server.trim() ? normalizeServer(server) : "";
-  const supportLink = account ? `${origin}/watch/${account}${srv ? `?server=${encodeURIComponent(srv)}` : ""}` : "";
+  const raw = server.trim();
+  const isDirect = /youtube\.com|youtu\.be|\.mp4(\?|$)|\.m3u8(\?|$)|\.webm(\?|$)/i.test(raw);
+  const srv = raw ? (isDirect ? raw : normalizeServer(raw)) : "";
+  const linkQuery = raw ? (isDirect ? `?src=${encodeURIComponent(raw)}` : `?server=${encodeURIComponent(srv)}`) : "";
+  const supportLink = account ? `${origin}/watch/${account}${linkQuery}` : "";
   const snippet = account
-    ? `<script src="${origin}/embed.js" data-payee="${account}"${srv ? ` data-server="${srv}"` : ""}></script>`
+    ? `<script src="${origin}/embed.js" data-payee="${account}"${!isDirect && srv ? ` data-server="${srv}"` : ""}></script>`
     : "";
 
   const refresh = useCallback(async () => {
@@ -49,8 +52,15 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!account) return;
     void refresh();
-    const id = setInterval(() => void refresh(), 6000);
-    return () => clearInterval(id);
+    const id = setInterval(() => void refresh(), 4000);
+    const onFocus = () => { if (!document.hidden) void refresh(); };
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [account, refresh]);
 
   const onInitiate = async () => {
