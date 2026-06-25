@@ -27,8 +27,19 @@ export default function DashboardPage() {
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState("");
   const [setupOpen, setSetupOpen] = useState(true);
+  const [profileName, setProfileName] = useState<string | null>(null);
 
   useEffect(() => setOrigin(window.location.origin), []);
+
+  const loadProfile = useCallback(async () => {
+    if (!account) return;
+    try {
+      const d = await (await fetch(`/api/profile/${account}`, { cache: "no-store" })).json();
+      setProfileName(d.username ?? null);
+    } catch { /* ignore */ }
+  }, [account]);
+
+  useEffect(() => { void loadProfile(); }, [loadProfile]);
 
   const raw = server.trim();
   const isDirect = /youtube\.com|youtu\.be|\.mp4(\?|$)|\.m3u8(\?|$)|\.webm(\?|$)/i.test(raw);
@@ -123,14 +134,14 @@ export default function DashboardPage() {
       className="min-h-screen px-5 pb-24 pt-24 sm:px-8 lg:px-16"
     >
       <div className="mx-auto max-w-5xl">
-        <DashboardHeader account={account} chainOk={chainOk} onSwitch={() => void switchToArc()} />
+        <DashboardHeader account={account} chainOk={chainOk} onSwitch={() => void switchToArc()} username={profileName} />
+        <ProfileCard account={account as `0x${string}`} onClaimed={loadProfile} />
         <EarningsHero available={available} totalInGateway={available + maturing + withdrawable} supporters={supporters} />
         <ValuePipeline
           available={available} maturing={maturing} withdrawable={withdrawable}
           busy={busy} onInitiate={onInitiate} onFinalize={onFinalize} error={err}
         />
         <SupportFeed feed={feed} />
-        <ProfileCard account={account as `0x${string}`} />
         <StreamSetup
           origin={origin} server={server} setServer={setServer}
           snippet={snippet} supportLink={supportLink}

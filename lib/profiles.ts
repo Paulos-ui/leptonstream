@@ -1,4 +1,5 @@
 import { kv } from "./kv";
+import { earnedUsd } from "./gateway-read";
 
 export interface Profile {
   address: string; // lowercased
@@ -19,6 +20,24 @@ export function validUsername(u: string): boolean {
 const pKey = (addr: string) => `profile:${addr.toLowerCase()}`;
 const uKey = (uname: string) => `uname:${uname}`;
 const rKey = (addr: string) => `refcount:${addr.toLowerCase()}`;
+const lKey = (addr: string) => `reflist:${addr.toLowerCase()}`;
+
+const REFERRAL_RATE = 0.01; // 1% of referred creators' earnings (accrued)
+
+export async function getReferred(addr: string): Promise<string[]> {
+  const raw = await kv.get(lKey(addr));
+  try { return raw ? (JSON.parse(raw) as string[]) : []; } catch { return []; }
+}
+
+/** A referrer's accrued referral earnings: 1% of the total earned by every
+ *  creator they referred. (Accounting figure — payout is a future on-chain
+ *  splitter step; see the UI note.) */
+export async function referralEarningsUsd(addr: string): Promise<number> {
+  const list = await getReferred(addr);
+  if (!list.length) return 0;
+  const sums = await Promise.all(list.slice(0, 50).map((a) => earnedUsd(a)));
+  return sums.reduce((a, b) => a + b, 0) * REFERRAL_RATE;
+}
 
 export async function getProfileByAddress(addr: string): Promise<Profile | null> {
   const raw = await kv.get(pKey(addr));
@@ -79,12 +98,21 @@ export async function claimUsername(
 
   let referredBy = existing?.referredBy;
   if (!existing && referrer) {
-    const ref = referrer.toLowerCase();
-    if (ref !== addr) {
+    // referrer may be a username or a 0x address.
+    let ref = referrer.trim().toLowerCase();
+    if (!/^0x[a-f0-9]{40}$/.test(ref)) {
+      ref = (await getAddressByUsername(ref)) ?? "";
+    }
+    if (ref && ref !== addr) {
       const refProfile = await getProfileByAddress(ref);
       if (refProfile) {
         referredBy = ref;
         await kv.incr(rKey(ref));
+        const list = await getReferred(ref);
+        if (!list.includes(addr)) {
+          list.push(addr);
+          await kv.set(lKey(ref), JSON.stringify(list));
+        }
       }
     }
   }

@@ -9,10 +9,12 @@ export default function DashboardHeader({
   account,
   chainOk,
   onSwitch,
+  username,
 }: {
   account: string;
   chainOk: boolean;
   onSwitch: () => void;
+  username?: string | null;
 }) {
   return (
     <motion.header
@@ -25,9 +27,12 @@ export default function DashboardHeader({
         <Link href="/" className="font-mono text-[11px] uppercase tracking-eyebrow text-muted hover:text-leaf">
           ← leptonstream
         </Link>
-        <h1 className="mt-1 font-serif text-3xl text-ink">Your earnings</h1>
+        <h1 className="mt-1 font-serif text-3xl text-ink">{username ? `@${username}` : "Your earnings"}</h1>
       </div>
       <div className="flex items-center gap-3">
+        {username && (
+          <Link href={`/u/${username}`} className="hidden font-mono text-[11px] text-leaf hover:underline sm:inline">view profile ↗</Link>
+        )}
         {!chainOk && (
           <motion.button
             initial={{ opacity: 0 }}

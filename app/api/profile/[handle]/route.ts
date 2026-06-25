@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveProfile, getReferralCount } from "@/lib/profiles";
+import { resolveProfile, getReferralCount, referralEarningsUsd } from "@/lib/profiles";
 import { earnedUsd, recentTransfers } from "@/lib/gateway-read";
 import { tierFor } from "@/lib/badge";
 
@@ -24,10 +24,11 @@ export async function GET(
     return NextResponse.json({ error: "not found" }, { status: 404, headers: CORS });
   }
 
-  const [earned, transfers, referrals] = await Promise.all([
+  const [earned, transfers, referrals, referralEarnings] = await Promise.all([
     earnedUsd(address),
     recentTransfers(address),
     getReferralCount(address),
+    referralEarningsUsd(address),
   ]);
 
   const supporters = new Set(transfers.map((t) => t.from.toLowerCase())).size;
@@ -42,6 +43,7 @@ export async function GET(
       earnedUsd: earned,
       supporters,
       referrals,
+      referralEarnings,
       tier,
       recent: transfers.slice(0, 8),
     },

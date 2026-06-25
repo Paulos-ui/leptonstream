@@ -13,9 +13,10 @@ interface ProfileData {
   earnedUsd: number;
   supporters: number;
   referrals: number;
+  referralEarnings: number;
 }
 
-export default function ProfileCard({ account }: { account: Address }) {
+export default function ProfileCard({ account, onClaimed }: { account: Address; onClaimed?: () => void }) {
   const [origin, setOrigin] = useState("");
   const [ref, setRef] = useState<string | null>(null);
   const [data, setData] = useState<ProfileData | null>(null);
@@ -36,7 +37,7 @@ export default function ProfileCard({ account }: { account: Address }) {
     try {
       const res = await fetch(`/api/profile/${account}`, { cache: "no-store" });
       const d = await res.json();
-      setData({ username: d.username ?? null, earnedUsd: d.earnedUsd ?? 0, supporters: d.supporters ?? 0, referrals: d.referrals ?? 0 });
+      setData({ username: d.username ?? null, earnedUsd: d.earnedUsd ?? 0, supporters: d.supporters ?? 0, referrals: d.referrals ?? 0, referralEarnings: d.referralEarnings ?? 0 });
     } catch { /* ignore */ }
   };
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [account]);
@@ -54,7 +55,7 @@ export default function ProfileCard({ account }: { account: Address }) {
       });
       const d = await res.json();
       if (!d.ok) { setErr(d.error || "could not claim"); }
-      else { setName(""); await load(); }
+      else { setName(""); await load(); onClaimed?.(); }
     } catch (e) { setErr(walletError(e) || "could not claim"); }
     finally { setBusy(false); }
   };
@@ -86,6 +87,19 @@ export default function ProfileCard({ account }: { account: Address }) {
             <Link href={`/u/${data.username}`} className="font-mono text-[12px] text-leaf hover:underline">view public profile ↗</Link>
           </div>
           <div className="mt-1 font-mono text-[11px] text-muted">{data.referrals} creator{data.referrals === 1 ? "" : "s"} referred</div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-leaf/30 bg-leaf/[0.06] p-4">
+              <div className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">referral earnings · 1%</div>
+              <div className="mt-1 font-serif text-2xl tabular-nums text-leaf">${(data.referralEarnings ?? 0).toFixed(4)}</div>
+              <div className="mt-1 font-mono text-[10px] text-muted">accrued from creators you referred · payout coming on-chain</div>
+            </div>
+            <div className="rounded-xl border border-ink/10 bg-white/40 p-4">
+              <div className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">your earnings</div>
+              <div className="mt-1 font-serif text-2xl tabular-nums text-ink">${(data.earnedUsd ?? 0).toFixed(4)}</div>
+              <div className="mt-1 font-mono text-[10px] text-muted">{data.supporters} supporter{data.supporters === 1 ? "" : "s"}</div>
+            </div>
+          </div>
 
           <div className="mt-5 space-y-3">
             <LinkRow label="profile link" value={profileUrl} onCopy={() => copy(profileUrl, "p")} copied={copied === "p"} />
