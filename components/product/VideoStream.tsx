@@ -20,12 +20,14 @@ export default function VideoStream({
   quality,
   color,
   onQuality,
+  onActive,
 }: {
   src?: string;
   playing: boolean;
   quality: number;
   color: string;
   onQuality?: (q: number) => void;
+  onActive?: (active: boolean) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [muted, setMuted] = useState(true);
@@ -76,23 +78,41 @@ export default function VideoStream({
   useEffect(() => {
     if (yt) return;
     const video = videoRef.current;
-    if (!video || !onQuality) return;
-    const good = () => onQuality(document.hidden ? 0.3 : 1);
-    const bad = () => onQuality(0.3);
-    const vis = () => onQuality(document.hidden ? 0.3 : 1);
+    if (!video) return;
+    const good = () => { onQuality?.(document.hidden ? 0.3 : 1); onActive?.(!document.hidden && !video.paused); };
+    const bad = () => { onQuality?.(0.3); onActive?.(false); };
+    const onPause = () => onActive?.(false);
+    const onPlay = () => onActive?.(!document.hidden);
+    const vis = () => { onQuality?.(document.hidden ? 0.3 : 1); onActive?.(!document.hidden && !video.paused); };
     video.addEventListener("playing", good);
     video.addEventListener("canplay", good);
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("ended", onPause);
     video.addEventListener("waiting", bad);
     video.addEventListener("stalled", bad);
     document.addEventListener("visibilitychange", vis);
     return () => {
       video.removeEventListener("playing", good);
       video.removeEventListener("canplay", good);
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("ended", onPause);
       video.removeEventListener("waiting", bad);
       video.removeEventListener("stalled", bad);
       document.removeEventListener("visibilitychange", vis);
     };
-  }, [onQuality, yt]);
+  }, [onQuality, onActive, yt]);
+
+  // YouTube: can't read iframe playback, but still gate metering on tab focus
+  // so a hidden tab never accrues.
+  useEffect(() => {
+    if (!yt) return;
+    const vis = () => onActive?.(!document.hidden);
+    onActive?.(!document.hidden);
+    document.addEventListener("visibilitychange", vis);
+    return () => document.removeEventListener("visibilitychange", vis);
+  }, [yt, onActive]);
 
   return (
     <div className="relative aspect-video overflow-hidden rounded-2xl border border-ink/15 bg-ink">

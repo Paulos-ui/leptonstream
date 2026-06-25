@@ -40,6 +40,7 @@ export default function WatchPage() {
   const [realQuality, setRealQuality] = useState(1);
   const [simUntil, setSimUntil] = useState(0);
   const quality = Date.now() < simUntil ? 0.3 : realQuality;
+  const [videoActive, setVideoActive] = useState(false);
 
   // Owncast live status (their server, their truth).
   const [oc, setOc] = useState<{ online: boolean; viewers: number; name?: string } | null>(null);
@@ -93,7 +94,7 @@ export default function WatchPage() {
     finally { setBusy(""); }
   };
 
-  const s = useStreamSession({ creator, ratePerSecUsd: RATE, ceilingUsd: ceiling, demo: safe, privateKey: pk, quality });
+  const s = useStreamSession({ creator, ratePerSecUsd: RATE, ceilingUsd: ceiling, demo: safe, privateKey: pk, quality, metering: videoActive });
 
   const hasFunds = parseFloat(walletUsdc) > 0;
   const isArmed = parseFloat(armed) > 0;
@@ -147,7 +148,11 @@ export default function WatchPage() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr]">
           <div>
-            <VideoStream src={videoSrc} playing={s.playing} quality={quality} color={stateColor} onQuality={setRealQuality} />
+            <VideoStream src={videoSrc} playing={s.playing} quality={quality} color={stateColor} onQuality={setRealQuality} onActive={setVideoActive} />
+
+            {s.playing && !videoActive && (
+              <p className="mt-3 font-mono text-[11px] text-muted">paused — metering only counts while the video is actually playing.</p>
+            )}
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {!s.playing ? (

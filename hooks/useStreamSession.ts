@@ -16,6 +16,7 @@ export interface SessionOpts {
   demo: boolean;
   privateKey: Hex | null;
   quality: number; // current effective quality (real signal, possibly overridden)
+  metering: boolean; // only accrue while the video is actually playing
 }
 
 export interface Settled {
@@ -79,7 +80,8 @@ export function useStreamSession(opts: SessionOpts) {
   useEffect(() => {
     if (!playing) return;
     const id = setInterval(() => {
-      void agentRef.current?.tick(1, optsRef.current.quality);
+      const o = optsRef.current;
+      if (o.metering) void agentRef.current?.tick(1, o.quality); // count only while watching
     }, 1000);
     return () => clearInterval(id);
   }, [playing]);

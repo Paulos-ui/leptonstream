@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LiveCard from "@/components/landing/LiveCard";
 import { LandingNav, SectionMark } from "@/components/landing/LandingChrome";
@@ -41,6 +41,13 @@ const FAQS = [
 
 export default function Home() {
   const [open, setOpen] = useState<number | null>(0);
+
+  useEffect(() => {
+    try {
+      const r = new URLSearchParams(window.location.search).get("ref");
+      if (r) localStorage.setItem("lepton.ref", r);
+    } catch { /* ignore */ }
+  }, []);
 
   return (
     <div className="min-h-screen bg-paper text-ink">

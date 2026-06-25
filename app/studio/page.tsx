@@ -10,6 +10,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { normalizeServer } from "@/lib/owncast";
 import DashboardHeader from "@/components/studio/DashboardHeader";
 import EarningsHero from "@/components/studio/EarningsHero";
+import ProfileCard from "@/components/studio/ProfileCard";
 import ValuePipeline from "@/components/studio/ValuePipeline";
 import SupportFeed from "@/components/studio/SupportFeed";
 import StreamSetup from "@/components/studio/StreamSetup";
@@ -129,6 +130,7 @@ export default function DashboardPage() {
           busy={busy} onInitiate={onInitiate} onFinalize={onFinalize} error={err}
         />
         <SupportFeed feed={feed} />
+        <ProfileCard account={account as `0x${string}`} />
         <StreamSetup
           origin={origin} server={server} setServer={setServer}
           snippet={snippet} supportLink={supportLink}

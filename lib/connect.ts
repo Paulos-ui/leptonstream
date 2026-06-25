@@ -12,6 +12,7 @@ import {
 } from "viem";
 import { ARC } from "./arc";
 import { GATEWAY_WALLET_ABI, ERC20_ABI } from "./gateway-abi";
+import { BADGE_ABI } from "./badge-abi";
 
 // Minimal viem chain for Arc testnet (USDC is the native gas token).
 export const arcChain = defineChain({
@@ -30,21 +31,71 @@ interface Eip1193 {
   removeListener?(event: string, handler: (...args: unknown[]) => void): void;
 }
 
-function getEthereum(): Eip1193 {
-  const eth = (globalThis as { ethereum?: Eip1193 }).ethereum;
-  if (!eth) throw new Error("No wallet found. Install MetaMask or a compatible wallet.");
-  return eth;
+// ---- Provider discovery (EIP-6963 + legacy window.ethereum) ----------------
+// Wallets announce themselves via EIP-6963; some (Brave, multi-wallet setups)
+// don't reliably set window.ethereum. We collect announcements, and once a
+// provider has authorized an account we PIN it so connect, network switch, and
+// every later transaction (withdraw, fund) all use the exact same wallet.
+let selectedProvider: Eip1193 | null = null;
+const announced: { rdns: string; name: string; provider: Eip1193 }[] = [];
+
+if (typeof window !== "undefined") {
+  window.addEventListener("eip6963:announceProvider", (event: Event) => {
+    const d = (event as CustomEvent).detail as {
+      info?: { rdns?: string; name?: string };
+      provider?: Eip1193;
+    };
+    if (d?.provider && d.info?.rdns && !announced.some((p) => p.rdns === d.info!.rdns)) {
+      announced.push({ rdns: d.info.rdns, name: d.info.name ?? d.info.rdns, provider: d.provider });
+    }
+  });
+  try { window.dispatchEvent(new Event("eip6963:requestProvider")); } catch { /* ignore */ }
 }
 
-/** Provider accessor that never throws (returns null when absent). */
-export function getProvider(): Eip1193 | null {
+function injected(): Eip1193 | null {
   return (globalThis as { ethereum?: Eip1193 }).ethereum ?? null;
+}
+
+function candidates(): Eip1193[] {
+  if (typeof window !== "undefined") {
+    try { window.dispatchEvent(new Event("eip6963:requestProvider")); } catch { /* ignore */ }
+  }
+  const list: Eip1193[] = [];
+  if (selectedProvider) list.push(selectedProvider);
+  const inj = injected();
+  if (inj && !list.includes(inj)) list.push(inj);
+  for (const a of announced) if (!list.includes(a.provider)) list.push(a.provider);
+  return list;
+}
+
+function getEthereum(): Eip1193 {
+  const p = getProvider();
+  if (!p) throw new Error("No wallet found. Install MetaMask or a compatible wallet.");
+  return p;
+}
+
+/** Provider accessor that never throws (returns the pinned/discovered provider). */
+export function getProvider(): Eip1193 | null {
+  return selectedProvider ?? injected() ?? announced[0]?.provider ?? null;
+}
+
+/** Reconnect silently after a reload: find a provider that already has an
+ *  authorized account, pin it, and return the address. No popup. */
+export async function silentReconnect(): Promise<Address | null> {
+  for (const p of candidates()) {
+    try {
+      const accts = (await p.request({ method: "eth_accounts" })) as Address[];
+      if (accts?.[0]) { selectedProvider = p; return accts[0]; }
+    } catch { /* try next */ }
+  }
+  if (!selectedProvider) selectedProvider = candidates()[0] ?? null;
+  return null;
 }
 
 export const ARC_HEX = `0x${ARC.chainId.toString(16)}` as const;
 
 export function hasWallet(): boolean {
-  return typeof window !== "undefined" && !!(window as { ethereum?: unknown }).ethereum;
+  return getProvider() !== null;
 }
 
 /**
@@ -78,12 +129,26 @@ const publicClient = () =>
 const walletClientFor = (account: Address) =>
   createWalletClient({ account, chain: arcChain, transport: custom(getEthereum()) });
 
-/** Request account access only. Network selection is a separate, non-blocking step. */
+/** Request account access. Tries each discovered wallet, pins the one that
+ *  authorizes, so every later call uses the same provider. */
 export async function connectWallet(): Promise<Address> {
-  const eth = getEthereum();
-  const accounts = (await eth.request({ method: "eth_requestAccounts" })) as Address[];
-  if (!accounts?.[0]) throw new Error("No account was authorized.");
-  return accounts[0];
+  const list = candidates();
+  if (!list.length) {
+    throw new Error("No wallet found. Install MetaMask or a compatible wallet.");
+  }
+  let lastErr: unknown;
+  for (const p of list) {
+    try {
+      const accounts = (await p.request({ method: "eth_requestAccounts" })) as Address[];
+      if (accounts?.[0]) {
+        selectedProvider = p;
+        return accounts[0];
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr ?? new Error("No account was authorized.");
 }
 
 export async function ensureArc(): Promise<void> {
@@ -202,5 +267,26 @@ export async function finalizeWithdraw(from: Address): Promise<Hex> {
     abi: GATEWAY_WALLET_ABI,
     functionName: "withdraw",
     args: [ARC.usdc as Address],
+  });
+}
+
+/** Sign a plain message with the connected wallet (used to claim a username). */
+export async function signMessage(address: Address, message: string): Promise<string> {
+  return walletClientFor(address).signMessage({ account: address, message });
+}
+
+/** Mint/upgrade the on-chain badge using a server attestation signature. */
+export async function claimBadge(
+  from: Address,
+  badgeAddress: Address,
+  tier: number,
+  sig: Hex
+): Promise<Hex> {
+  await ensureArc();
+  return walletClientFor(from).writeContract({
+    address: badgeAddress,
+    abi: BADGE_ABI,
+    functionName: "claim",
+    args: [tier, sig],
   });
 }
