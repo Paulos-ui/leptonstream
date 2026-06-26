@@ -12,7 +12,7 @@ export function LandingNav() {
         <div className="hidden items-center gap-7 font-mono text-[13px] text-ink/70 md:flex">
           <a href="#how" className="hover:text-ink">how</a>
           <a href="#architecture" className="hover:text-ink">architecture</a>
-          <a href="#safety" className="hover:text-ink">safety</a>
+          <Link href="/leaderboard" className="hover:text-ink">leaderboard</Link>
           <a href="#faq" className="hover:text-ink">faq</a>
         </div>
         <div className="flex items-center gap-3">

@@ -33,6 +33,10 @@ export function useStreamSession(opts: SessionOpts) {
   const [log, setLog] = useState<{ t: number; line: string }[]>([]);
   const [settled, setSettled] = useState<Settled[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [effectiveRate, setEffectiveRate] = useState(0);
+  const [liveQuality, setLiveQuality] = useState(1);
+  const [pendingUnits, setPending] = useState(0);
+  const [inFlightUnits, setInFlight] = useState(0);
 
   const optsRef = useRef(opts);
   optsRef.current = opts;
@@ -66,11 +70,19 @@ export function useStreamSession(opts: SessionOpts) {
       } else if (e.type === "tick") {
         setSpent(e.spentUnits);
         setSeconds(Math.round(e.seconds));
+        setEffectiveRate(e.effectiveRate);
+        setLiveQuality(e.quality);
+        setPending(agent.pendingUnits);
+        setInFlight(agent.inFlightUnits);
       } else if (e.type === "batch" && e.result.ok) {
         setSpent(agent.spentUnits);
+        setPending(agent.pendingUnits);
+        setInFlight(agent.inFlightUnits);
         setSettled((s) => [...s, { seq: e.batch.seq, units: e.result.settledUnits, tx: e.result.txHash }]);
       } else if (e.type === "ceiling") {
         setSpent(e.spentUnits);
+        setPending(agent.pendingUnits);
+        setInFlight(agent.inFlightUnits);
       }
     });
     agentRef.current = agent;
@@ -111,5 +123,12 @@ export function useStreamSession(opts: SessionOpts) {
     setPlaying(false);
   }, []);
 
-  return { state, spentUnits, seconds, reason, log, settled, playing, start, pause, stop };
+  return {
+    state, spentUnits, seconds, reason, log, settled, playing,
+    effectiveRate, quality: liveQuality, pendingUnits, inFlightUnits,
+    rateUnitsPerSec: usdc(opts.ratePerSecUsd),
+    ceilingUnits: usdc(opts.ceilingUsd),
+    lowQuality: 0.52, highQuality: 0.72,
+    start, pause, stop,
+  };
 }

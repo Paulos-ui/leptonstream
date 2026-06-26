@@ -108,7 +108,7 @@ export default function ProfilePage() {
         </header>
 
         <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="earned (in gateway)" value={`$${p.earnedUsd.toFixed(4)}`} accent={color} />
+          <Stat label="total earned" value={`$${p.earnedUsd.toFixed(4)}`} accent={color} />
           <Stat label="supporters" value={String(p.supporters)} />
           <Stat label="creators referred" value={String(p.referrals)} />
           <Stat label="referral earnings · 1%" value={`$${(p.referralEarnings ?? 0).toFixed(4)}`} accent="#5BA013" />

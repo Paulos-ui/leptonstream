@@ -7,6 +7,7 @@ import type { Hex, Address } from "viem";
 import { isAddress } from "viem";
 import { useStreamSession } from "@/hooks/useStreamSession";
 import VideoStream from "@/components/product/VideoStream";
+import AgentPanel from "@/components/product/AgentPanel";
 import { formatUSDC } from "@/core/money";
 import { ARC, txUrl, addrUrl } from "@/lib/arc";
 import { STATE_COLOR, STATE_LABEL, short } from "@/lib/format";
@@ -153,6 +154,27 @@ export default function WatchPage() {
             {s.playing && !videoActive && (
               <p className="mt-3 font-mono text-[11px] text-muted">paused — metering only counts while the video is actually playing.</p>
             )}
+
+            <div className="mt-6">
+              <AgentPanel
+                state={s.state}
+                reason={s.reason}
+                seconds={s.seconds}
+                spentUnits={s.spentUnits}
+                pendingUnits={s.pendingUnits}
+                inFlightUnits={s.inFlightUnits}
+                ceilingUnits={s.ceilingUnits}
+                effectiveRate={s.effectiveRate}
+                rateUnitsPerSec={s.rateUnitsPerSec}
+                quality={quality}
+                lowQuality={s.lowQuality}
+                highQuality={s.highQuality}
+                settledCount={s.settled.length}
+                metering={videoActive}
+                playing={s.playing}
+                log={s.log}
+              />
+            </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {!s.playing ? (

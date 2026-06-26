@@ -21,6 +21,12 @@ const pKey = (addr: string) => `profile:${addr.toLowerCase()}`;
 const uKey = (uname: string) => `uname:${uname}`;
 const rKey = (addr: string) => `refcount:${addr.toLowerCase()}`;
 const lKey = (addr: string) => `reflist:${addr.toLowerCase()}`;
+const INDEX = "profiles:index";
+
+export async function getAllProfileAddresses(): Promise<string[]> {
+  const raw = await kv.get(INDEX);
+  try { return raw ? (JSON.parse(raw) as string[]) : []; } catch { return []; }
+}
 
 const REFERRAL_RATE = 0.01; // 1% of referred creators' earnings (accrued)
 
@@ -124,5 +130,12 @@ export async function claimUsername(
     referredBy,
   };
   await kv.set(pKey(addr), JSON.stringify(profile));
+  if (!existing) {
+    const idx = await getAllProfileAddresses();
+    if (!idx.includes(addr)) {
+      idx.push(addr);
+      await kv.set(INDEX, JSON.stringify(idx));
+    }
+  }
   return { ok: true, profile };
 }

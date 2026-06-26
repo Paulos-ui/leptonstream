@@ -59,8 +59,18 @@ export async function recentTransfers(addr: string): Promise<Transfer[]> {
   }
 }
 
-/** Total currently held in Gateway (≈ earned, before withdrawal) in USD. */
+/** Total received from settlements (sum of incoming x402 transfers), USD. */
+export async function receivedTotalUsd(addr: string): Promise<number> {
+  const t = await recentTransfers(addr);
+  return t.reduce((s, x) => s + Number(x.amount) / 1e6, 0);
+}
+
+/** A creator's earnings, USD. Prefer received settlements; fall back to the
+ *  Gateway balance in case settlements credit the balance rather than the
+ *  transfers feed. This is what the profile, tier, and badge all read. */
 export async function earnedUsd(addr: string): Promise<number> {
+  const received = await receivedTotalUsd(addr);
+  if (received > 0) return received;
   const b = await gatewayBalance(addr);
   return parseFloat(b.available) + parseFloat(b.withdrawing) + parseFloat(b.withdrawable);
 }
