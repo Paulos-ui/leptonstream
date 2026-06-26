@@ -42,15 +42,19 @@ export default function WatchPage() {
   const [simUntil, setSimUntil] = useState(0);
   const quality = Date.now() < simUntil ? 0.3 : realQuality;
   const [videoActive, setVideoActive] = useState(false);
-  const [creatorRate, setCreatorRate] = useState(RATE);
+  const rateParam = sp.get("rate");
+  const [creatorRate, setCreatorRate] = useState(() => {
+    const r = rateParam ? parseFloat(rateParam) : NaN;
+    return Number.isFinite(r) && r > 0 ? r : RATE;
+  });
 
   useEffect(() => {
-    if (!creator) return;
+    if (rateParam || !creator) return; // an explicit Explore rate wins
     fetch(`/api/profile/${creator}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => { if (typeof d.rate === "number" && d.rate > 0) setCreatorRate(d.rate); })
       .catch(() => {});
-  }, [creator]);
+  }, [creator, rateParam]);
 
   // Owncast live status (their server, their truth).
   const [oc, setOc] = useState<{ online: boolean; viewers: number; name?: string } | null>(null);

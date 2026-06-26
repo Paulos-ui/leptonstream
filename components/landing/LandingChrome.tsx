@@ -10,7 +10,7 @@ export function LandingNav() {
           <span className="text-leaf">▦</span> leptonstream
         </Link>
         <div className="hidden items-center gap-7 font-mono text-[13px] text-ink/70 md:flex">
-          <Link href="/discover" className="hover:text-ink">discover</Link>
+          <Link href="/explore" className="hover:text-ink">explore</Link>
           <Link href="/leaderboard" className="hover:text-ink">leaderboard</Link>
           <a href="#how" className="hover:text-ink">how</a>
           <a href="#faq" className="hover:text-ink">faq</a>
