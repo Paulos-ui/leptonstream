@@ -46,6 +46,11 @@ export async function GET(
       referralEarnings,
       tier,
       recent: transfers.slice(0, 8),
+      listed: profile?.listed ?? false,
+      category: profile?.category ?? null,
+      tagline: profile?.tagline ?? "",
+      streamUrl: profile?.streamUrl ?? "",
+      rate: profile?.rate ?? null,
     },
     { headers: CORS }
   );

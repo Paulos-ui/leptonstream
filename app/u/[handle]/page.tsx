@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import type { Address, Hex } from "viem";
-import { TIER_COLOR } from "@/lib/badge";
+import { TIER_COLOR, tierName } from "@/lib/badge";
 import { short } from "@/lib/format";
 import { addrUrl, txUrl } from "@/lib/arc";
 import { useWallet } from "@/hooks/useWallet";
-import { claimBadge, waitForTx, walletError } from "@/lib/connect";
+import { claimBadge, waitForTx, walletError, getOnchainTier } from "@/lib/connect";
+import BadgeProgress from "@/components/BadgeProgress";
 
 interface Tier { id: number; name: string; blurb: string }
 interface ProfileResp {
@@ -34,8 +35,13 @@ export default function ProfilePage() {
 
   const [mintMsg, setMintMsg] = useState("");
   const [minting, setMinting] = useState(false);
+  const [onchainTier, setOnchainTier] = useState<number>(0);
 
   useEffect(() => setOrigin(window.location.origin), []);
+
+  useEffect(() => {
+    if (p?.address) getOnchainTier(p.address as Address).then(setOnchainTier).catch(() => {});
+  }, [p?.address]);
 
   const load = useCallback(async () => {
     try {
@@ -63,6 +69,7 @@ export default function ProfilePage() {
       const tx = await claimBadge(account, BADGE, att.tier.id, att.signature as Hex);
       await waitForTx(tx);
       setMintMsg(`✓ Badge minted — ${att.tier.name}.`);
+      getOnchainTier(p.address as Address).then(setOnchainTier).catch(() => {});
     } catch (e) { setMintMsg(walletError(e) || "Mint failed."); }
     finally { setMinting(false); }
   };
@@ -116,12 +123,20 @@ export default function ProfilePage() {
 
         <p className="mt-4 font-mono text-[12px] text-muted">{p.tier.blurb}</p>
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        {/* Progress toward the next tier */}
+        <div className="mt-6 rounded-2xl border border-ink/10 bg-white/40 p-5">
+          <BadgeProgress earnedUsd={p.earnedUsd} minted={onchainTier} />
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
           <Link href={`/watch/${p.address}`} className="rounded-full bg-ink px-6 py-3 font-mono text-sm text-paper transition-transform hover:scale-[1.02]">Support this creator →</Link>
-          {isOwner && BADGE && p.tier.id > 0 && (
+          {isOwner && BADGE && p.tier.id > onchainTier && (
             <button onClick={() => void mint()} disabled={minting} className="rounded-full border border-leaf/50 px-6 py-3 font-mono text-sm text-leaf hover:border-leaf disabled:opacity-50">
-              {minting ? "minting…" : `Mint your ${p.tier.name} badge`}
+              {minting ? "minting…" : onchainTier === 0 ? `Mint your ${p.tier.name} badge` : `Upgrade to ${p.tier.name} →`}
             </button>
+          )}
+          {isOwner && BADGE && p.tier.id > 0 && p.tier.id <= onchainTier && (
+            <span className="self-center font-mono text-[11px] text-leaf">✓ {tierName(onchainTier)} badge minted — nothing to mint until you reach the next tier</span>
           )}
           {isOwner && !BADGE && p.tier.id > 0 && (
             <span className="self-center font-mono text-[11px] text-muted">on-chain badge not enabled on this deployment</span>

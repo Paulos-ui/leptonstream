@@ -16,7 +16,7 @@ import { fetchBalances, fundSession, waitForTx, walletError } from "@/lib/connec
 import { useWallet } from "@/hooks/useWallet";
 import { getStatus, getInstanceName, hlsUrl } from "@/lib/owncast";
 
-const RATE = 0.000124; // $/sec
+const RATE = 0.000124; // $/sec — fallback when a creator hasn't set a rate
 
 export default function WatchPage() {
   const params = useParams<{ creator: string }>();
@@ -42,6 +42,15 @@ export default function WatchPage() {
   const [simUntil, setSimUntil] = useState(0);
   const quality = Date.now() < simUntil ? 0.3 : realQuality;
   const [videoActive, setVideoActive] = useState(false);
+  const [creatorRate, setCreatorRate] = useState(RATE);
+
+  useEffect(() => {
+    if (!creator) return;
+    fetch(`/api/profile/${creator}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (typeof d.rate === "number" && d.rate > 0) setCreatorRate(d.rate); })
+      .catch(() => {});
+  }, [creator]);
 
   // Owncast live status (their server, their truth).
   const [oc, setOc] = useState<{ online: boolean; viewers: number; name?: string } | null>(null);
@@ -95,7 +104,7 @@ export default function WatchPage() {
     finally { setBusy(""); }
   };
 
-  const s = useStreamSession({ creator, ratePerSecUsd: RATE, ceilingUsd: ceiling, demo: safe, privateKey: pk, quality, metering: videoActive });
+  const s = useStreamSession({ creator, ratePerSecUsd: creatorRate, ceilingUsd: ceiling, demo: safe, privateKey: pk, quality, metering: videoActive });
 
   const hasFunds = parseFloat(walletUsdc) > 0;
   const isArmed = parseFloat(armed) > 0;
@@ -191,14 +200,14 @@ export default function WatchPage() {
 
             <div className="mt-8 rounded-xl border border-ink/10 bg-white/40 p-5">
               <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-eyebrow text-muted">
-                <span>your ceiling</span><span className="text-ink/70">rate ${RATE.toFixed(6)}/sec</span>
+                <span>your ceiling</span><span className="text-ink/70">rate ${creatorRate.toFixed(6)}/sec</span>
               </div>
               <div className="mt-3 flex items-center gap-4">
                 <input type="range" min={0.02} max={1} step={0.01} value={ceiling} disabled={s.playing}
                   onChange={(e) => setCeiling(parseFloat(e.target.value))} className="flex-1 accent-leaf disabled:opacity-50" />
                 <span className="w-20 text-right font-mono text-lg text-leaf tabular-nums">${ceiling.toFixed(2)}</span>
               </div>
-              <p className="mt-2 font-mono text-[11px] text-muted">the session can never spend past this — about {Math.round(ceiling / RATE / 60)} min at full rate</p>
+              <p className="mt-2 font-mono text-[11px] text-muted">the session can never spend past this — about {Math.round(ceiling / creatorRate / 60)} min at full rate</p>
             </div>
           </div>
 

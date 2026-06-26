@@ -11,6 +11,7 @@ import { normalizeServer } from "@/lib/owncast";
 import DashboardHeader from "@/components/studio/DashboardHeader";
 import EarningsHero from "@/components/studio/EarningsHero";
 import ProfileCard from "@/components/studio/ProfileCard";
+import ListingCard from "@/components/studio/ListingCard";
 import ValuePipeline from "@/components/studio/ValuePipeline";
 import SupportFeed from "@/components/studio/SupportFeed";
 import StreamSetup from "@/components/studio/StreamSetup";
@@ -136,6 +137,7 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-5xl">
         <DashboardHeader account={account} chainOk={chainOk} onSwitch={() => void switchToArc()} username={profileName} />
         <ProfileCard account={account as `0x${string}`} onClaimed={loadProfile} />
+        <ListingCard account={account as `0x${string}`} />
         <EarningsHero available={available} totalInGateway={available + maturing + withdrawable} supporters={supporters} />
         <ValuePipeline
           available={available} maturing={maturing} withdrawable={withdrawable}

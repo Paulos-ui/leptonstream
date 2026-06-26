@@ -6,6 +6,12 @@ export interface Profile {
   username: string;
   createdAt: number;
   referredBy?: string; // referrer's address (lowercased)
+  // Discovery listing (opt-in)
+  listed?: boolean;
+  category?: string;
+  tagline?: string;
+  streamUrl?: string;
+  rate?: number; // per-second rate ($), clamped to the creator's badge bracket
 }
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
@@ -69,6 +75,33 @@ export async function resolveProfile(handle: string): Promise<Profile | null> {
 export type ClaimResult =
   | { ok: true; profile: Profile }
   | { ok: false; error: string };
+
+/** Save a creator's discovery listing. `rate` is clamped by the caller to the
+ *  creator's badge bracket before this is called. */
+export async function updateListing(
+  address: string,
+  data: { listed: boolean; category?: string; tagline?: string; streamUrl?: string; rate?: number }
+): Promise<ClaimResult> {
+  const addr = address.toLowerCase();
+  const existing = await getProfileByAddress(addr);
+  if (!existing) return { ok: false, error: "Claim a username first." };
+  const profile: Profile = {
+    ...existing,
+    listed: data.listed,
+    category: data.category ?? existing.category,
+    tagline: (data.tagline ?? existing.tagline ?? "").slice(0, 140),
+    streamUrl: data.streamUrl ?? existing.streamUrl,
+    rate: data.rate ?? existing.rate,
+  };
+  await kv.set(pKey(addr), JSON.stringify(profile));
+  return { ok: true, profile };
+}
+
+export async function getListedProfiles(): Promise<Profile[]> {
+  const addrs = (await getAllProfileAddresses()).slice(0, 60);
+  const all = await Promise.all(addrs.map((a) => getProfileByAddress(a)));
+  return all.filter((p): p is Profile => !!p && !!p.listed);
+}
 
 /**
  * Claim a username for an address. Username uniqueness is enforced atomically

@@ -275,6 +275,24 @@ export async function signMessage(address: Address, message: string): Promise<st
   return walletClientFor(address).signMessage({ account: address, message });
 }
 
+/** Read a holder's current on-chain badge tier (0 if none / not configured). */
+export async function getOnchainTier(address: Address): Promise<number> {
+  const badge = process.env.NEXT_PUBLIC_BADGE_ADDRESS as Address | undefined;
+  if (!badge) return 0;
+  try {
+    const client = createPublicClient({ transport: http(ARC.rpcUrl) });
+    const t = (await client.readContract({
+      address: badge,
+      abi: BADGE_ABI,
+      functionName: "tierOf",
+      args: [address],
+    })) as number;
+    return Number(t) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 /** Mint/upgrade the on-chain badge using a server attestation signature. */
 export async function claimBadge(
   from: Address,

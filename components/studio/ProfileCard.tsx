@@ -7,6 +7,7 @@ import type { Address } from "viem";
 import { signMessage, walletError } from "@/lib/connect";
 import { claimMessage } from "@/lib/claim-message";
 import { tierFor, TIER_COLOR } from "@/lib/badge";
+import BadgeProgress from "@/components/BadgeProgress";
 
 interface ProfileData {
   username: string | null;
@@ -99,6 +100,10 @@ export default function ProfileCard({ account, onClaimed }: { account: Address; 
               <div className="mt-1 font-serif text-2xl tabular-nums text-ink">${(data.earnedUsd ?? 0).toFixed(4)}</div>
               <div className="mt-1 font-mono text-[10px] text-muted">{data.supporters} supporter{data.supporters === 1 ? "" : "s"}</div>
             </div>
+          </div>
+
+          <div className="mt-5 rounded-xl border border-ink/10 bg-white/40 p-4">
+            <BadgeProgress earnedUsd={data.earnedUsd ?? 0} />
           </div>
 
           <div className="mt-5 space-y-3">
